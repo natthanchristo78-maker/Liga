@@ -1,0 +1,1762 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EA Sports FC - Pro Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Oswald', 'sans-serif']
+                    },
+                    colors: { 
+                        brand: { 500: '#c8ff00', 600: '#a3cc00', dark: '#0a0a0c' },
+                        surface: { 50: 'rgba(255,255,255,0.03)', 100: 'rgba(255,255,255,0.05)', 200: 'rgba(255,255,255,0.1)' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { 
+            background-color: #0a0a0c; 
+            color: #f8fafc; 
+            background-image: radial-gradient(circle at 15% 50%, rgba(200, 255, 0, 0.03), transparent 25%),
+                              radial-gradient(circle at 85% 30%, rgba(255, 255, 255, 0.02), transparent 25%);
+        }
+        
+        /* Glassmorphism Utilities */
+        .glass { 
+            background: rgba(20, 20, 25, 0.6); 
+            backdrop-filter: blur(16px); 
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+        }
+        .glass-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .glass-hover:hover { 
+            border-color: rgba(200, 255, 0, 0.4); 
+            box-shadow: 0 10px 30px -10px rgba(200, 255, 0, 0.15); 
+            transform: translateY(-4px); 
+        }
+        
+        /* Form Elements */
+        .fc-input {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            color: white;
+        }
+        .fc-input:focus {
+            outline: none;
+            border-color: #c8ff00;
+            box-shadow: 0 0 15px rgba(200, 255, 0, 0.1);
+            background: rgba(200, 255, 0, 0.02);
+        }
+
+        /* Hero Banners */
+        .hero-banner {
+            background: linear-gradient(to right, rgba(10,10,12,0.95) 0%, rgba(10,10,12,0.6) 50%, rgba(10,10,12,0.95) 100%),
+                        url('https://images.unsplash.com/photo-1522778119026-d647f0596c20?q=80&w=2070&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-banner::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle at center, rgba(200,255,0,0.15) 0%, transparent 50%);
+            animation: pulse-glow 8s infinite alternate;
+        }
+
+        /* Animations */
+        @keyframes pulse-glow {
+            0% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(1.1); opacity: 1; }
+        }
+        .toast-enter { animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .toast-leave { animation: fadeOut 0.3s ease-in forwards; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(20px); } }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #c8ff00; }
+        
+        /* Remove arrows from number inputs */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body class="min-h-screen selection:bg-brand-500 selection:text-black pb-20">
+
+    <!-- Header -->
+    <header class="glass sticky top-0 z-40 border-b-0 border-white/10">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4 cursor-pointer group" onclick="switchTab('home')">
+                <div class="w-12 h-12 rounded-xl bg-brand-500 text-black flex items-center justify-center shadow-[0_0_15px_rgba(200,255,0,0.3)] group-hover:shadow-[0_0_25px_rgba(200,255,0,0.5)] transition-shadow">
+                    <i class="ph-fill ph-soccer-ball text-3xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-display font-black tracking-widest uppercase text-white leading-none">FC<span class="text-brand-500">MANAGER</span></h1>
+                    <p class="text-[10px] text-slate-400 font-bold tracking-[0.2em] uppercase mt-1">Pro Leagues</p>
+                </div>
+            </div>
+            <nav class="flex gap-1 bg-black/40 p-1.5 rounded-xl border border-white/5 items-center">
+                <button onclick="switchTab('home')" id="tab-btn-home" class="px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-brand-500 text-black shadow-lg">Ligas</button>
+                <button onclick="switchTab('players')" id="tab-btn-players" class="px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white hover:bg-white/5">Jogadores</button>
+                <button onclick="switchTab('teams')" id="tab-btn-teams" class="hidden px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white hover:bg-white/5">Clubes</button>
+                <button onclick="switchTab('admin')" id="tab-btn-admin" class="hidden px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white hover:bg-white/5">Admin</button>
+                <div class="w-[1px] h-4 bg-white/10 mx-2"></div>
+                <button onclick="openAuthModal()" id="auth-btn" class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white flex items-center">
+                    <i class="ph-bold ph-lock mr-2 text-lg"></i> <span class="hidden md:inline">Login Admin</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-8 relative z-10">
+        
+        <!-- Tab: Home (Championships) -->
+        <div id="view-home" class="space-y-10 block animate-[fadeIn_0.5s_ease-out]">
+            
+            <!-- Hero Banner -->
+            <div class="hero-banner rounded-3xl p-8 md:p-16 flex flex-col items-center justify-center text-center shadow-2xl min-h-[350px]">
+                <div class="relative z-10 w-full flex flex-col items-center">
+                    <span class="text-brand-500 font-bold uppercase tracking-[0.3em] text-sm mb-4 block drop-shadow-md">Temporada Oficial</span>
+                    <h2 class="font-display text-5xl md:text-7xl lg:text-8xl font-black text-white uppercase tracking-tighter leading-none mb-10 drop-shadow-2xl">
+                        [NOME DO SEU CAMPEONATO]
+                    </h2>
+                    <div class="relative z-10">
+                        <button id="btn-create-champ" onclick="openCreateChampModal()" class="hidden group relative px-10 py-5 bg-brand-500 text-black font-display font-bold uppercase tracking-widest text-lg rounded-xl overflow-hidden shadow-[0_0_30px_rgba(200,255,0,0.4)] hover:scale-105 transition-transform duration-300">
+                            <span class="relative z-10 flex items-center gap-3"><i class="ph-bold ph-plus text-2xl"></i> Novo Torneio</span>
+                            <div class="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-1.5 h-6 bg-brand-500 rounded-full"></div>
+                    <h3 class="font-display text-2xl font-bold uppercase tracking-wide">Torneios Ativos</h3>
+                </div>
+                <div id="champs-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Championships rendered here -->
+                </div>
+            </div>
+
+            <!-- NOVA SEÇÃO: GALERIA DE TROFÉUS (MEMORIAL) -->
+            <div id="hall-of-fame-section" class="hidden mt-12">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-1.5 h-6 bg-yellow-400 rounded-full shadow-[0_0_10px_rgba(250,204,21,0.5)]"></div>
+                    <h3 class="font-display text-2xl font-bold uppercase tracking-wide text-yellow-400 drop-shadow-md">Galeria de Troféus</h3>
+                </div>
+                <div id="hall-of-fame-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <!-- Trophies rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Jogadores -->
+        <div id="view-players" class="space-y-10 hidden animate-[fadeIn_0.5s_ease-out]">
+            <div id="block-add-player" class="hidden glass p-8 rounded-3xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-brand-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+                <div class="relative z-10">
+                    <h3 class="font-display text-2xl font-bold uppercase tracking-wide mb-6 flex items-center gap-3">
+                        <i class="ph-bold ph-user-plus text-brand-500 text-3xl"></i> Cadastrar Atleta
+                    </h3>
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <input type="text" id="new-player-name" placeholder="Nome do Jogador" class="fc-input flex-1 rounded-xl px-5 py-4 text-sm font-medium">
+                        <input type="text" id="new-player-logo" placeholder="URL da Foto do Atleta (Opcional)" class="fc-input flex-1 rounded-xl px-5 py-4 text-sm font-medium">
+                        <button onclick="addPlayer()" class="bg-white text-black hover:bg-brand-500 px-8 py-4 rounded-xl font-display font-bold uppercase tracking-wider transition-colors shadow-lg">Registrar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex justify-between items-end mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-1.5 h-6 bg-white rounded-full"></div>
+                        <h3 class="font-display text-2xl font-bold uppercase tracking-wide">Elenco Registrado</h3>
+                    </div>
+                    <span class="text-brand-500 font-display font-bold text-xl"><span id="players-count">0</span> Atletas</span>
+                </div>
+                <div id="players-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-5">
+                    <!-- Players rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Clubes (Equipes) -->
+        <div id="view-teams" class="space-y-10 hidden animate-[fadeIn_0.5s_ease-out]">
+            <div id="block-add-team" class="hidden glass p-8 rounded-3xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-brand-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+                <div class="relative z-10">
+                    <h3 class="font-display text-2xl font-bold uppercase tracking-wide mb-6 flex items-center gap-3">
+                        <i class="ph-bold ph-shield-chevron text-brand-500 text-3xl"></i> Cadastrar Clube EA FC
+                    </h3>
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <input type="text" id="new-team-name" placeholder="Nome do Clube (Ex: Real Madrid)" class="fc-input flex-1 rounded-xl px-5 py-4 text-sm font-medium">
+                        <input type="text" id="new-team-logo" placeholder="URL do Escudo (Opcional)" class="fc-input flex-1 rounded-xl px-5 py-4 text-sm font-medium">
+                        <button onclick="addTeam()" class="bg-white text-black hover:bg-brand-500 px-8 py-4 rounded-xl font-display font-bold uppercase tracking-wider transition-colors shadow-lg">Registrar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex justify-between items-end mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-1.5 h-6 bg-white rounded-full"></div>
+                        <h3 class="font-display text-2xl font-bold uppercase tracking-wide">Banco de Clubes</h3>
+                    </div>
+                    <span class="text-brand-500 font-display font-bold text-xl"><span id="teams-count">0</span> Clubes</span>
+                </div>
+                <div id="teams-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
+                    <!-- Teams rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Campeonato Detalhes -->
+        <div id="view-champ-details" class="space-y-8 hidden animate-[fadeIn_0.5s_ease-out]">
+            
+            <!-- Champ Header -->
+            <div class="hero-banner rounded-3xl p-6 md:p-10 flex flex-col md:flex-row justify-between items-center gap-6">
+                <div class="flex items-center gap-6 z-10">
+                    <button onclick="switchTab('home')" class="w-12 h-12 rounded-full bg-black/50 border border-white/10 flex items-center justify-center text-slate-300 hover:text-brand-500 hover:border-brand-500/50 transition-colors backdrop-blur-md">
+                        <i class="ph-bold ph-arrow-left text-xl"></i>
+                    </button>
+                    <div>
+                        <span id="detail-champ-info" class="text-brand-500 font-bold uppercase tracking-[0.2em] text-xs mb-1 block">Formato</span>
+                        <h2 id="detail-champ-name" class="font-display text-4xl md:text-5xl font-black text-white uppercase tracking-tight">Nome da Liga</h2>
+                    </div>
+                </div>
+                <button id="btn-del-champ" onclick="deleteCurrentChamp()" class="hidden z-10 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-500 hover:text-red-400 px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider transition-colors flex items-center gap-2">
+                    <i class="ph-bold ph-trash text-lg"></i> Excluir Torneio
+                </button>
+            </div>
+
+            <!-- Tabela (Pontos Corridos) -->
+            <div id="standings-container" class="glass rounded-3xl overflow-hidden hidden border border-white/5">
+                <div class="p-6 border-b border-white/5 bg-white/[0.02] flex items-center gap-3">
+                    <i class="ph-fill ph-ranking text-brand-500 text-2xl"></i>
+                    <h3 class="font-display text-xl font-bold uppercase tracking-wider">Classificação Global</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead class="bg-black/40 text-slate-400 text-[10px] uppercase font-bold tracking-widest">
+                            <tr>
+                                <th class="px-6 py-4 text-center w-16">Pos</th>
+                                <th class="px-6 py-4">Clube/Jogador</th>
+                                <th class="px-6 py-4 text-center text-brand-500">PTS</th>
+                                <th class="px-6 py-4 text-center">J</th>
+                                <th class="px-6 py-4 text-center">V</th>
+                                <th class="px-6 py-4 text-center">E</th>
+                                <th class="px-6 py-4 text-center">D</th>
+                                <th class="px-6 py-4 text-center">SG</th>
+                            </tr>
+                        </thead>
+                        <tbody id="standings-body" class="divide-y divide-white/5">
+                            <!-- Rows rendered here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Chaveamento (Mata-Mata) -->
+            <div id="bracket-container" class="glass rounded-3xl overflow-hidden hidden border border-white/5 p-6 overflow-x-auto">
+                <div class="flex items-center gap-3 mb-6 border-b border-white/5 pb-4">
+                    <i class="ph-fill ph-git-branch text-brand-500 text-2xl"></i>
+                    <h3 class="font-display text-xl font-bold uppercase tracking-wider">Chaveamento Oficial</h3>
+                </div>
+                <div id="bracket-body" class="flex gap-12 min-w-max pb-8 pt-4">
+                    <!-- Brackets rendered here -->
+                </div>
+            </div>
+
+            <!-- Estatísticas -->
+            <div id="stats-container" class="mt-8 w-full">
+                <!-- Estatísticas renderizadas aqui -->
+            </div>
+        </div>
+
+        <!-- Tab: Admin -->
+        <div id="view-admin" class="space-y-10 hidden animate-[fadeIn_0.5s_ease-out]">
+            <div class="glass p-8 rounded-3xl relative overflow-hidden">
+                <h3 class="font-display text-2xl font-bold uppercase tracking-wide mb-6 flex items-center gap-3">
+                    <i class="ph-bold ph-shield-check text-brand-500 text-3xl"></i> Administração de Placares
+                </h3>
+                <div class="mb-6">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Selecione o Torneio Ativo</label>
+                    <select id="admin-champ-select" onchange="onAdminChampChange()" class="fc-input w-full md:w-1/2 rounded-xl px-5 py-4 text-sm font-medium appearance-none cursor-pointer">
+                        <option value="">-- Escolha um Torneio --</option>
+                    </select>
+                </div>
+                
+                <div id="admin-match-selector-container" class="hidden mb-6 p-6 bg-black/40 rounded-2xl border border-white/5 shadow-inner">
+                    <h4 class="text-[10px] font-bold text-brand-500 uppercase tracking-widest mb-4">Montar Confronto (Selecione os Jogadores)</h4>
+                    <div class="flex flex-col md:flex-row gap-4 items-center">
+                        <select id="admin-home-select" onchange="findAndRenderAdminMatch()" class="fc-input flex-1 w-full rounded-xl px-4 py-3 text-sm appearance-none cursor-pointer">
+                            <option value="">Mandante (Casa)</option>
+                        </select>
+                        <span class="text-slate-500 font-black text-sm">X</span>
+                        <select id="admin-away-select" onchange="findAndRenderAdminMatch()" class="fc-input flex-1 w-full rounded-xl px-4 py-3 text-sm appearance-none cursor-pointer">
+                            <option value="">Visitante (Fora)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="admin-single-match-editor" class="max-w-2xl mx-auto">
+                    <!-- Matches editable form rendered here -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modals -->
+    
+    <!-- Auth Modal -->
+    <div id="modal-auth" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass border-white/10 rounded-3xl w-full max-w-sm p-8 shadow-2xl relative overflow-hidden">
+            <h3 class="font-display text-2xl font-black uppercase tracking-wide mb-6">Acesso <span class="text-brand-500">Restrito</span></h3>
+            <div class="space-y-5 relative z-10">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Senha de Administrador</label>
+                    <input type="password" id="modal-auth-pwd" class="fc-input w-full rounded-xl px-5 py-4 text-sm font-medium tracking-widest" placeholder="••••••••">
+                </div>
+            </div>
+            <div class="mt-8 flex gap-3 relative z-10">
+                <button onclick="closeModal('modal-auth')" class="flex-1 bg-white/5 hover:bg-white/10 py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider transition-colors">Cancelar</button>
+                <button onclick="authenticateAdmin()" class="flex-1 bg-brand-500 text-black hover:bg-brand-600 py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider transition-colors">Entrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Champ Modal -->
+    <div id="modal-create-champ" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass border-white/10 rounded-3xl w-full max-w-xl p-8 shadow-2xl flex flex-col max-h-[90vh] relative overflow-hidden">
+            <!-- Glow effect -->
+            <div class="absolute -top-20 -left-20 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <h3 class="font-display text-3xl font-black uppercase tracking-wide mb-6 relative z-10">Novo <span class="text-brand-500">Torneio</span></h3>
+            
+            <div class="space-y-6 overflow-y-auto pr-2 custom-scrollbar flex-1 relative z-10">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Nome da Competição</label>
+                    <input type="text" id="modal-champ-name" placeholder="Ex: Premier League" class="fc-input w-full rounded-xl px-5 py-4 text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Formato</label>
+                        <select id="modal-champ-format" class="fc-input w-full rounded-xl px-5 py-4 text-sm appearance-none cursor-pointer">
+                            <option value="league">Pontos Corridos</option>
+                            <option value="knockout">Mata-Mata</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col justify-end">
+                        <label class="flex items-center gap-3 cursor-pointer fc-input px-5 py-4 rounded-xl hover:border-brand-500/50">
+                            <input type="checkbox" id="modal-champ-twoway" checked class="w-5 h-5 accent-brand-500 bg-black border-white/20 rounded cursor-pointer">
+                            <span class="text-sm font-bold text-white">Ida e Volta</span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Participantes & Clubes</label>
+                        <button onclick="selectAllPlayers()" class="text-[10px] text-brand-500 font-bold uppercase tracking-wider hover:text-white transition-colors">Selecionar Todos</button>
+                    </div>
+                    <div id="modal-players-list" class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-black/40 p-4 rounded-2xl border border-white/5 max-h-64 overflow-y-auto custom-scrollbar">
+                        <!-- Checkboxes rendered here -->
+                    </div>
+                </div>
+            </div>
+            <div class="mt-8 flex gap-4 pt-6 border-t border-white/10 relative z-10">
+                <button onclick="closeModal('modal-create-champ')" class="flex-1 bg-white/5 hover:bg-white/10 text-white py-4 rounded-xl font-display font-bold uppercase tracking-wider transition-colors">Cancelar</button>
+                <button onclick="createChampionship()" class="flex-1 bg-brand-500 hover:bg-brand-600 text-black py-4 rounded-xl font-display font-bold uppercase tracking-wider transition-colors shadow-[0_0_15px_rgba(200,255,0,0.2)]">Gerar Competição</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Player Modal -->
+    <div id="modal-edit-player" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass border-white/10 rounded-3xl w-full max-w-sm p-8 shadow-2xl relative overflow-hidden">
+            <h3 class="font-display text-2xl font-black uppercase tracking-wide mb-6">Editar <span class="text-brand-500">Atleta</span></h3>
+            <input type="hidden" id="edit-player-id">
+            <div class="space-y-5 relative z-10">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Nome</label>
+                    <input type="text" id="edit-player-name" class="fc-input w-full rounded-xl px-5 py-4 text-sm">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Foto (URL)</label>
+                    <input type="text" id="edit-player-logo" placeholder="https://..." class="fc-input w-full rounded-xl px-5 py-4 text-sm">
+                </div>
+            </div>
+            <div class="mt-8 flex gap-3 relative z-10">
+                <button onclick="closeModal('modal-edit-player')" class="flex-1 bg-white/5 hover:bg-white/10 py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider transition-colors">Cancelar</button>
+                <button onclick="saveEditPlayer()" class="flex-1 bg-white text-black hover:bg-brand-500 py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider transition-colors">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Team Modal -->
+    <div id="modal-edit-team" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass border-white/10 rounded-3xl w-full max-w-sm p-8 shadow-2xl relative overflow-hidden">
+            <h3 class="font-display text-2xl font-black uppercase tracking-wide mb-6">Editar <span class="text-brand-500">Clube</span></h3>
+            <input type="hidden" id="edit-team-id">
+            <div class="space-y-5 relative z-10">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Nome do Clube</label>
+                    <input type="text" id="edit-team-name" class="fc-input w-full rounded-xl px-5 py-4 text-sm">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Escudo (URL)</label>
+                    <input type="text" id="edit-team-logo" placeholder="https://..." class="fc-input w-full rounded-xl px-5 py-4 text-sm">
+                </div>
+            </div>
+            <div class="mt-8 flex gap-3 relative z-10">
+                <button onclick="closeModal('modal-edit-team')" class="flex-1 bg-white/5 hover:bg-white/10 py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider transition-colors">Cancelar</button>
+                <button onclick="saveEditTeam()" class="flex-1 bg-white text-black hover:bg-brand-500 py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider transition-colors">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="modal-confirm" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass border-red-500/20 rounded-3xl w-full max-w-sm p-8 text-center shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 bg-red-500/10 rounded-full blur-2xl pointer-events-none"></div>
+            <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-500/20 relative z-10">
+                <i class="ph-fill ph-warning text-red-500 text-3xl"></i>
+            </div>
+            <h3 class="font-display text-2xl font-black uppercase tracking-wide mb-3 relative z-10">Atenção</h3>
+            <p id="confirm-msg" class="text-sm text-slate-300 mb-8 relative z-10 font-medium"></p>
+            <div class="flex gap-3 relative z-10">
+                <button onclick="closeModal('modal-confirm')" class="flex-1 bg-white/5 hover:bg-white/10 py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider transition-colors">Cancelar</button>
+                <button id="confirm-btn-yes" class="flex-1 bg-red-600 hover:bg-red-500 text-white py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider transition-colors">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="fixed top-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none"></div>
+
+    <script>
+        /* --- STATE MANAGEMENT & AUTH --- */
+        const STORAGE_KEY = 'fc_manager_data';
+        
+        // URLs Distintas para as Taças (Liga = Prata/Escudo | Copa = Ouro/Taça Clássica)
+        const TROPHY_LEAGUE_URL = 'https://images.unsplash.com/photo-1614632537190-23e4146777db?auto=format&fit=crop&w=400&q=80'; 
+        const TROPHY_CUP_URL = 'https://images.unsplash.com/photo-1578269174936-2709b6aeb913?auto=format&fit=crop&w=400&q=80'; 
+        
+        let state = {
+            players: [],
+            teams: [],
+            championships: []
+        };
+        let currentChampId = null;
+        let isAdmin = false;
+
+        const presetTeams = [
+            { id: 't1', name: 'Real Madrid', logo: 'https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg' },
+            { id: 't2', name: 'FC Barcelona', logo: 'https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg' },
+            { id: 't3', name: 'Manchester City', logo: 'https://upload.wikimedia.org/wikipedia/en/e/eb/Manchester_City_FC_badge.svg' },
+            { id: 't4', name: 'Bayern Munich', logo: 'https://upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg' },
+            { id: 't5', name: 'Paris SG', logo: 'https://upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg' },
+            { id: 't6', name: 'Arsenal', logo: 'https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg' },
+            { id: 't7', name: 'Liverpool', logo: 'https://upload.wikimedia.org/wikipedia/en/0/0c/Liverpool_FC.svg' },
+            { id: 't8', name: 'Man United', logo: 'https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg' },
+            { id: 't9', name: 'B. Dortmund', logo: 'https://upload.wikimedia.org/wikipedia/commons/6/67/Borussia_Dortmund_logo.svg' },
+            { id: 't10', name: 'Atlético Madrid', logo: 'https://upload.wikimedia.org/wikipedia/en/f/f4/Atletico_Madrid_2017_logo.svg' },
+            { id: 't11', name: 'Juventus', logo: 'https://upload.wikimedia.org/wikipedia/commons/b/bc/Juventus_FC_-_pictogram_black_%28Italy%2C_2017%29.svg' },
+            { id: 't12', name: 'Inter Milan', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/05/FC_Internazionale_Milano_2021.svg' },
+            { id: 't13', name: 'AC Milan', logo: 'https://upload.wikimedia.org/wikipedia/commons/d/d0/Logo_of_AC_Milan.svg' },
+            { id: 't14', name: 'Chelsea', logo: 'https://upload.wikimedia.org/wikipedia/en/c/cc/Chelsea_FC.svg' },
+            { id: 't15', name: 'Tottenham', logo: 'https://upload.wikimedia.org/wikipedia/en/b/b4/Tottenham_Hotspur.svg' },
+            { id: 't16', name: 'Newcastle', logo: 'https://upload.wikimedia.org/wikipedia/en/5/56/Newcastle_United_Logo.svg' },
+            { id: 't17', name: 'Aston Villa', logo: 'https://upload.wikimedia.org/wikipedia/en/9/9f/Aston_Villa_logo.svg' },
+            { id: 't18', name: 'Napoli', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/28/S.S.C._Napoli_logo.svg' },
+            { id: 't19', name: 'AS Roma', logo: 'https://upload.wikimedia.org/wikipedia/en/f/f7/AS_Roma_logo_%282017%29.svg' },
+            { id: 't20', name: 'Lazio', logo: 'https://upload.wikimedia.org/wikipedia/en/c/ce/S.S._Lazio_badge.svg' },
+            { id: 't21', name: 'RB Leipzig', logo: 'https://upload.wikimedia.org/wikipedia/en/0/04/RB_Leipzig_2014_logo.svg' },
+            { id: 't22', name: 'Bayer Leverkusen', logo: 'https://upload.wikimedia.org/wikipedia/en/5/59/Bayer_04_Leverkusen_logo.svg' },
+            { id: 't23', name: 'Benfica', logo: 'https://upload.wikimedia.org/wikipedia/en/a/a2/SL_Benfica_logo.svg' },
+            { id: 't24', name: 'FC Porto', logo: 'https://upload.wikimedia.org/wikipedia/en/f/f1/FC_Porto.svg' },
+            { id: 't25', name: 'Sporting CP', logo: 'https://upload.wikimedia.org/wikipedia/en/e/e2/Sporting_Clube_de_Portugal_logo.svg' },
+            { id: 't26', name: 'Ajax', logo: 'https://upload.wikimedia.org/wikipedia/en/7/79/Ajax_Amsterdam.svg' },
+            { id: 't27', name: 'PSV', logo: 'https://upload.wikimedia.org/wikipedia/en/0/05/PSV_Eindhoven.svg' },
+            { id: 't28', name: 'West Ham', logo: 'https://upload.wikimedia.org/wikipedia/en/c/c2/West_Ham_United_FC_logo.svg' },
+            { id: 't29', name: 'Sevilla', logo: 'https://upload.wikimedia.org/wikipedia/en/3/3b/Sevilla_FC_logo.svg' },
+            { id: 't30', name: 'Real Sociedad', logo: 'https://upload.wikimedia.org/wikipedia/en/f/f1/Real_Sociedad_logo.svg' },
+            { id: 't31', name: 'Atalanta', logo: 'https://upload.wikimedia.org/wikipedia/en/6/66/AtalantaBC.svg' },
+            { id: 't32', name: 'Fiorentina', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e3/ACF_Fiorentina_2.svg' }
+        ];
+
+        function loadData() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY);
+                if (data) state = JSON.parse(data);
+                if (!Array.isArray(state.players)) state.players = [];
+                if (!Array.isArray(state.teams)) state.teams = [];
+                if (!Array.isArray(state.championships)) state.championships = [];
+                
+                // Sincroniza os times predefinidos caso ainda não existam no banco de dados local do usuário
+                presetTeams.forEach(pt => {
+                    if (!state.teams.some(t => t.name === pt.name)) {
+                        state.teams.push(pt);
+                    }
+                });
+                
+                isAdmin = localStorage.getItem('fc_admin') === 'true';
+            } catch (e) {
+                console.error("Error loading data", e);
+            }
+            updateAuthUI();
+        }
+
+        function saveData() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                renderAll();
+            } catch (e) {
+                showToast("Erro ao salvar os dados localmente.", "error");
+            }
+        }
+
+        /* --- AUTHENTICATION LOGIC --- */
+        function openAuthModal() {
+            if (isAdmin) {
+                isAdmin = false;
+                localStorage.setItem('fc_admin', 'false');
+                showToast("Você saiu do modo Admin.", "success");
+                updateAuthUI();
+            } else {
+                document.getElementById('modal-auth-pwd').value = '';
+                openModal('modal-auth');
+            }
+        }
+
+        function authenticateAdmin() {
+            const pwd = document.getElementById('modal-auth-pwd').value;
+            if (pwd === 'admin123') {
+                isAdmin = true;
+                localStorage.setItem('fc_admin', 'true');
+                closeModal('modal-auth');
+                showToast("Modo Admin ativado com sucesso!", "success");
+                updateAuthUI();
+            } else {
+                showToast("Senha incorreta.", "error");
+            }
+        }
+
+        function updateAuthUI() {
+            const btn = document.getElementById('auth-btn');
+            if (btn) {
+                if (isAdmin) {
+                    btn.innerHTML = '<i class="ph-bold ph-sign-out mr-2 text-lg"></i> <span class="hidden md:inline">Sair (Admin)</span>';
+                    btn.classList.add('text-brand-500');
+                    btn.classList.remove('text-slate-400');
+                } else {
+                    btn.innerHTML = '<i class="ph-bold ph-lock mr-2 text-lg"></i> <span class="hidden md:inline">Login Admin</span>';
+                    btn.classList.add('text-slate-400');
+                    btn.classList.remove('text-brand-500');
+                }
+            }
+            
+            const adminTabBtn = document.getElementById('tab-btn-admin');
+            if (adminTabBtn) adminTabBtn.classList.toggle('hidden', !isAdmin);
+            
+            const teamsTabBtn = document.getElementById('tab-btn-teams');
+            if (teamsTabBtn) teamsTabBtn.classList.toggle('hidden', !isAdmin);
+            
+            if (!isAdmin) {
+                const adminView = document.getElementById('view-admin');
+                const teamsView = document.getElementById('view-teams');
+                if ((adminView && !adminView.classList.contains('hidden')) || (teamsView && !teamsView.classList.contains('hidden'))) {
+                    switchTab('home');
+                }
+            }
+
+            const createBtn = document.getElementById('btn-create-champ');
+            if (createBtn) createBtn.classList.toggle('hidden', !isAdmin);
+
+            const addPlayerBlock = document.getElementById('block-add-player');
+            if (addPlayerBlock) addPlayerBlock.classList.toggle('hidden', !isAdmin);
+            
+            const addTeamBlock = document.getElementById('block-add-team');
+            if (addTeamBlock) addTeamBlock.classList.toggle('hidden', !isAdmin);
+
+            const delChampBtn = document.getElementById('btn-del-champ');
+            if (delChampBtn) delChampBtn.classList.toggle('hidden', !isAdmin);
+            
+            renderAll();
+        }
+
+        /* --- UI HELPERS --- */
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const isSuccess = type === 'success';
+            
+            const bgClass = isSuccess ? 'bg-[#1a1a1f]' : 'bg-[#1a1313]';
+            const borderClass = isSuccess ? 'border-brand-500/30' : 'border-red-500/30';
+            const iconColor = isSuccess ? 'text-brand-500' : 'text-red-500';
+            const icon = isSuccess ? 'ph-check-circle' : 'ph-x-circle';
+            
+            toast.className = `toast-enter flex items-center gap-4 ${bgClass} border ${borderClass} p-4 pr-6 rounded-2xl shadow-2xl pointer-events-auto backdrop-blur-md`;
+            toast.innerHTML = `
+                <div class="${iconColor} text-2xl"><i class="ph-fill ${icon}"></i></div>
+                <span class="font-medium text-sm text-white">${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-leave');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function switchTab(tab) {
+            ['home', 'players', 'teams', 'champ-details', 'admin'].forEach(t => {
+                const view = document.getElementById(`view-${t}`);
+                if (view) view.classList.add('hidden');
+            });
+            ['home', 'players', 'teams', 'admin'].forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (btn) btn.className = "px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white hover:bg-white/5";
+            });
+
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+            if (tab !== 'champ-details') {
+                const activeBtn = document.getElementById(`tab-btn-${tab}`);
+                if(activeBtn) activeBtn.className = "px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-brand-500 text-black shadow-lg";
+                currentChampId = null;
+            }
+            renderAll();
+        }
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        let confirmCallback = null;
+        function showConfirm(msg, callback) {
+            document.getElementById('confirm-msg').innerText = msg;
+            confirmCallback = callback;
+            const yesBtn = document.getElementById('confirm-btn-yes');
+            yesBtn.onclick = () => {
+                closeModal('modal-confirm');
+                if (confirmCallback) confirmCallback();
+            };
+            openModal('modal-confirm');
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag] || tag));
+        }
+
+        /* --- PLAYER MANAGEMENT --- */
+        function addPlayer() {
+            if (!isAdmin) return showToast("Acesso restrito (Somente Admin)", "error");
+            
+            const nameInput = document.getElementById('new-player-name');
+            const logoInput = document.getElementById('new-player-logo');
+            const name = nameInput.value.trim();
+            const logo = logoInput.value.trim();
+
+            if (!name) return showToast("Digite o nome do jogador.", "error");
+            if (state.players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+                return showToast("Jogador já existe.", "error");
+            }
+
+            state.players.push({ id: Date.now().toString(), name, logo });
+            nameInput.value = '';
+            logoInput.value = '';
+            saveData();
+            showToast("Jogador registrado com sucesso!");
+        }
+
+        function removePlayer(id) {
+            if (!isAdmin) return showToast("Acesso restrito (Somente Admin)", "error");
+            showConfirm("Excluir este atleta apagará seu registro e cancelará seus jogos em todos os torneios. Continuar?", () => {
+                // Remove o jogador da lista global
+                state.players = state.players.filter(p => p.id !== id);
+                
+                // Remove o jogador e seus confrontos de todos os campeonatos ativos
+                state.championships.forEach(champ => {
+                    champ.teamIds = champ.teamIds.filter(teamId => teamId !== id);
+                    champ.matches = champ.matches.filter(m => m.home !== id && m.away !== id);
+                });
+                
+                // Se a seleção do painel admin estiver no jogador excluído, limpa
+                const hSelect = document.getElementById('admin-home-select');
+                const aSelect = document.getElementById('admin-away-select');
+                if (hSelect && hSelect.value === id) hSelect.value = '';
+                if (aSelect && aSelect.value === id) aSelect.value = '';
+
+                saveData();
+                showToast("Atleta e histórico removidos.");
+            });
+        }
+
+        function openEditPlayer(id) {
+            if (!isAdmin) return showToast("Acesso restrito (Somente Admin)", "error");
+            const player = state.players.find(p => p.id === id);
+            if (!player) return;
+            document.getElementById('edit-player-id').value = player.id;
+            document.getElementById('edit-player-name').value = player.name;
+            document.getElementById('edit-player-logo').value = player.logo || '';
+            openModal('modal-edit-player');
+        }
+
+        function saveEditPlayer() {
+            if (!isAdmin) return showToast("Acesso restrito (Somente Admin)", "error");
+            const id = document.getElementById('edit-player-id').value;
+            const newName = document.getElementById('edit-player-name').value.trim();
+            const newLogo = document.getElementById('edit-player-logo').value.trim();
+
+            if (!newName) return showToast("Nome não pode ser vazio.", "error");
+            
+            const player = state.players.find(p => p.id === id);
+            if (player) {
+                if (player.name !== newName && state.players.some(p => p.name.toLowerCase() === newName.toLowerCase())) {
+                    return showToast("Já existe um jogador com este nome.", "error");
+                }
+                player.name = newName;
+                player.logo = newLogo;
+                saveData();
+                closeModal('modal-edit-player');
+                showToast("Dados atualizados!");
+            }
+        }
+
+        /* --- TEAM MANAGEMENT --- */
+        function addTeam() {
+            if (!isAdmin) return showToast("Acesso restrito (Somente Admin)", "error");
+            
+            const nameInput = document.getElementById('new-team-name');
+            const logoInput = document.getElementById('new-team-logo');
+            const name = nameInput.value.trim();
+            const logo = logoInput.value.trim();
+
+            if (!name) return showToast("Digite o nome do Clube.", "error");
+            if (state.teams.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+                return showToast("Clube já existe.", "error");
+            }
+
+            state.teams.push({ id: Date.now().toString(), name, logo });
+            nameInput.value = '';
+            logoInput.value = '';
+            saveData();
+            showToast("Clube registrado com sucesso!");
+        }
+
+        function removeTeam(id) {
+            if (!isAdmin) return showToast("Acesso restrito (Somente Admin)", "error");
+            showConfirm("Excluir este clube o removerá do banco de dados (não afetará campeonatos passados já gerados). Continuar?", () => {
+                state.teams = state.teams.filter(t => t.id !== id);
+                saveData();
+                showToast("Clube removido.");
+            });
+        }
+
+        function openEditTeam(id) {
+            if (!isAdmin) return showToast("Acesso restrito (Somente Admin)", "error");
+            const team = state.teams.find(t => t.id === id);
+            if (!team) return;
+            document.getElementById('edit-team-id').value = team.id;
+            document.getElementById('edit-team-name').value = team.name;
+            document.getElementById('edit-team-logo').value = team.logo || '';
+            openModal('modal-edit-team');
+        }
+
+        function saveEditTeam() {
+            if (!isAdmin) return showToast("Acesso restrito (Somente Admin)", "error");
+            const id = document.getElementById('edit-team-id').value;
+            const newName = document.getElementById('edit-team-name').value.trim();
+            const newLogo = document.getElementById('edit-team-logo').value.trim();
+
+            if (!newName) return showToast("Nome não pode ser vazio.", "error");
+            
+            const team = state.teams.find(t => t.id === id);
+            if (team) {
+                if (team.name !== newName && state.teams.some(t => t.name.toLowerCase() === newName.toLowerCase())) {
+                    return showToast("Já existe um clube com este nome.", "error");
+                }
+                team.name = newName;
+                team.logo = newLogo;
+                saveData();
+                closeModal('modal-edit-team');
+                showToast("Clube atualizado!");
+            }
+        }
+
+        /* --- CHAMPIONSHIP CREATION (MATH ALGORITHMS) --- */
+        function openCreateChampModal() {
+            if (!isAdmin) return showToast("Acesso restrito (Somente Admin)", "error");
+            if (state.players.length < 2) {
+                switchTab('players');
+                return showToast("Cadastre pelo menos 2 jogadores primeiro.", "error");
+            }
+            document.getElementById('modal-champ-name').value = '';
+            
+            const container = document.getElementById('modal-players-list');
+            container.innerHTML = '';
+            
+            let teamOptions = '<option value="">-- Selecione o Clube --</option>' + state.teams.sort((a,b)=>a.name.localeCompare(b.name)).map(t => `<option value="${t.id}">${escapeHTML(t.name)}</option>`).join('');
+
+            state.players.forEach(p => {
+                container.innerHTML += `
+                    <div class="flex flex-col gap-2 p-3 rounded-xl bg-white/5 border border-transparent hover:border-brand-500/30 transition-colors">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" value="${p.id}" checked class="champ-player-cb w-4 h-4 accent-brand-500 rounded bg-black" onchange="toggleTeamSelect('${p.id}')">
+                            <span class="text-sm font-medium truncate text-white">${escapeHTML(p.name)}</span>
+                        </label>
+                        <select id="champ-team-${p.id}" class="fc-input w-full rounded-lg px-3 py-2 text-xs">
+                            ${teamOptions}
+                        </select>
+                    </div>
+                `;
+            });
+            openModal('modal-create-champ');
+        }
+
+        function toggleTeamSelect(playerId) {
+            const cb = document.querySelector(`.champ-player-cb[value="${playerId}"]`);
+            const sel = document.getElementById(`champ-team-${playerId}`);
+            if (cb && sel) {
+                if (cb.checked) sel.classList.remove('hidden');
+                else sel.classList.add('hidden');
+            }
+        }
+
+        function selectAllPlayers() {
+            document.querySelectorAll('.champ-player-cb').forEach(cb => {
+                cb.checked = true;
+                toggleTeamSelect(cb.value);
+            });
+        }
+
+        function createChampionship() {
+            if (!isAdmin) return showToast("Acesso restrito (Somente Admin)", "error");
+            
+            const name = document.getElementById('modal-champ-name').value.trim();
+            const format = document.getElementById('modal-champ-format').value;
+            const twoway = document.getElementById('modal-champ-twoway').checked;
+            
+            if (!name) return showToast("Dê um nome ao campeonato.", "error");
+
+            const selectedIds = Array.from(document.querySelectorAll('.champ-player-cb:checked')).map(cb => cb.value);
+            if (selectedIds.length < 2) return showToast("Selecione pelo menos 2 jogadores.", "error");
+
+            let participants = {};
+            for (let pid of selectedIds) {
+                const teamId = document.getElementById(`champ-team-${pid}`).value;
+                participants[pid] = teamId || null;
+            }
+
+            let matches = [];
+            
+            if (format === 'league') {
+                // CIRCLE METHOD FOR ROUND ROBIN
+                let participants = [...selectedIds];
+                if (participants.length % 2 !== 0) participants.push('BYE');
+
+                const numTeams = participants.length;
+                const rounds = numTeams - 1;
+                const half = numTeams / 2;
+                let roundMatches = [];
+
+                for (let r = 0; r < rounds; r++) {
+                    for (let i = 0; i < half; i++) {
+                        let home = participants[i];
+                        let away = participants[numTeams - 1 - i];
+                        if (home !== 'BYE' && away !== 'BYE') {
+                            roundMatches.push({
+                                id: Date.now().toString() + Math.random().toString(36).substring(7),
+                                roundNum: r + 1,
+                                home, away, homeGoals: null, awayGoals: null, played: false
+                            });
+                        }
+                    }
+                    participants.splice(1, 0, participants.pop());
+                }
+
+                matches = [...roundMatches];
+
+                if (twoway) {
+                    let returnMatches = roundMatches.map(m => ({
+                        id: Date.now().toString() + Math.random().toString(36).substring(7),
+                        roundNum: m.roundNum + rounds,
+                        home: m.away,
+                        away: m.home,
+                        homeGoals: null, awayGoals: null, played: false
+                    }));
+                    matches = matches.concat(returnMatches);
+                }
+            } else {
+                // KNOCKOUT (MATA-MATA) ADVANCED BRACKET SYSTEM
+                let numParticipants = selectedIds.length;
+                let bracketSize = Math.pow(2, Math.ceil(Math.log2(numParticipants)));
+                if (bracketSize < 2) bracketSize = 2;
+                
+                let shuffled = [...selectedIds].sort(() => Math.random() - 0.5);
+                while (shuffled.length < bracketSize) { shuffled.push('BYE'); } // Preenche com Folgas
+                
+                let numRounds = Math.log2(bracketSize);
+                let koMatches = [];
+                let nodesByRound = [];
+                
+                // Cria a estrutura da Árvore
+                for (let r = 0; r < numRounds; r++) {
+                    let matchesInRound = bracketSize / Math.pow(2, r + 1);
+                    let roundNodes = [];
+                    for (let m = 0; m < matchesInRound; m++) {
+                        let node = {
+                            nodeId: `kn_${r}_${m}_${Date.now()}`,
+                            roundNum: r + 1,
+                            matchNum: m,
+                            home: null,
+                            away: null,
+                            nextId: null,
+                            isBye: false
+                        };
+                        // Primeira rodada recebe os jogadores sorteados
+                        if (r === 0) {
+                            node.home = shuffled[m * 2];
+                            node.away = shuffled[m * 2 + 1];
+                            if (node.home === 'BYE' || node.away === 'BYE') node.isBye = true;
+                        }
+                        roundNodes.push(node);
+                    }
+                    nodesByRound.push(roundNodes);
+                }
+                
+                // Conecta os nós (Quem ganha vai para onde)
+                for (let r = 0; r < numRounds - 1; r++) {
+                    for (let m = 0; m < nodesByRound[r].length; m++) {
+                        nodesByRound[r][m].nextId = nodesByRound[r+1][Math.floor(m / 2)].nodeId;
+                    }
+                }
+                
+                // Gera as Partidas Oficiais
+                nodesByRound.forEach((roundNodes, r) => {
+                    roundNodes.forEach(node => {
+                        let hGoals = node.isBye ? (node.away === 'BYE' ? 3 : 0) : null;
+                        let aGoals = node.isBye ? (node.away === 'BYE' ? 0 : 3) : null;
+                        
+                        koMatches.push({
+                            id: Date.now().toString() + Math.random().toString(36).substring(7),
+                            nodeId: node.nodeId,
+                            nextId: node.nextId,
+                            matchNum: node.matchNum,
+                            roundNum: r + 1,
+                            home: node.home,
+                            away: node.away,
+                            homeGoals: hGoals,
+                            awayGoals: aGoals,
+                            played: node.isBye,
+                            isReturn: false,
+                            isKnockout: true
+                        });
+                        
+                        if (twoway) {
+                            koMatches.push({
+                                id: Date.now().toString() + Math.random().toString(36).substring(7),
+                                nodeId: node.nodeId,
+                                nextId: node.nextId,
+                                matchNum: node.matchNum,
+                                roundNum: r + 1,
+                                home: node.away,
+                                away: node.home,
+                                homeGoals: node.isBye ? aGoals : null,
+                                awayGoals: node.isBye ? hGoals : null,
+                                played: node.isBye,
+                                isReturn: true,
+                                isKnockout: true
+                            });
+                        }
+                    });
+                });
+                
+                // Avança automaticamente as Folgas (BYE) para a segunda rodada
+                nodesByRound[0].forEach(node => {
+                    if (node.isBye && node.nextId) {
+                        let winner = node.home === 'BYE' ? node.away : node.home;
+                        let isLeft = node.matchNum % 2 === 0;
+                        koMatches.forEach(m => {
+                            if (m.nodeId === node.nextId) {
+                                if (isLeft) {
+                                    if (!m.isReturn) m.home = winner; else m.away = winner;
+                                } else {
+                                    if (!m.isReturn) m.away = winner; else m.home = winner;
+                                }
+                            }
+                        });
+                    }
+                });
+                
+                matches = koMatches;
+            }
+
+            const newChamp = {
+                id: Date.now().toString(),
+                name, format, twoway,
+                teamIds: selectedIds,
+                participants,
+                matches
+            };
+
+            state.championships.push(newChamp);
+            saveData();
+            closeModal('modal-create-champ');
+            showToast("Torneio criado com sucesso!");
+        }
+
+        /* --- CHAMPIONSHIP MANAGEMENT --- */
+        function openChampDetails(id) {
+            currentChampId = id;
+            switchTab('champ-details');
+        }
+
+        function deleteCurrentChamp() {
+            if (!isAdmin) return showToast("Acesso restrito (Somente Admin)", "error");
+            if (!currentChampId) return;
+            
+            showConfirm("Excluir este campeonato apagará todo o histórico. Continuar?", () => {
+                state.championships = state.championships.filter(c => c.id !== currentChampId);
+                currentChampId = null;
+                saveData();
+                switchTab('home');
+                showToast("Torneio excluído.");
+            });
+        }
+
+        function saveScore(champId, matchId) {
+            if (!isAdmin) return showToast("Acesso restrito (Somente Admin)", "error");
+            
+            const hInput = document.getElementById(`admin-h-${matchId}`);
+            const aInput = document.getElementById(`admin-a-${matchId}`);
+            if(!hInput || !aInput) return;
+
+            const hg = hInput.value.trim() === '' ? null : parseInt(hInput.value);
+            const ag = aInput.value.trim() === '' ? null : parseInt(aInput.value);
+
+            const champ = state.championships.find(c => c.id === champId);
+            if(champ) {
+                const match = champ.matches.find(m => m.id === matchId);
+                if(match) {
+                    match.homeGoals = hg;
+                    match.awayGoals = ag;
+                    match.played = (hg !== null && ag !== null);
+                    
+                    // Lógica de Avanço Automático do Mata-Mata
+                    if (champ.format === 'knockout' && match.nodeId && match.nextId && match.played) {
+                        const nodeMatches = champ.matches.filter(m => m.nodeId === match.nodeId);
+                        
+                        // Se todos os jogos do confronto (Ida e Volta) acabaram
+                        if (nodeMatches.every(m => m.played)) {
+                            let hScore = 0; let aScore = 0;
+                            let homeId = nodeMatches[0].home;
+                            let awayId = nodeMatches[0].away;
+                            
+                            nodeMatches.forEach(m => {
+                                if (m.home === homeId) { hScore += m.homeGoals; aScore += m.awayGoals; }
+                                else { hScore += m.awayGoals; aScore += m.homeGoals; }
+                            });
+                            
+                            let winner = null;
+                            if (hScore > aScore) winner = homeId;
+                            else if (aScore > hScore) winner = awayId;
+                            else winner = homeId; // Em caso de empate absoluto, avança o mandante por padrão (Para desempatar, basta o Admin adicionar 1 gol).
+                            
+                            // Aplica o vencedor na próxima fase da chave
+                            const nextMatches = champ.matches.filter(m => m.nodeId === match.nextId);
+                            nextMatches.forEach(m => {
+                                const isLeftSlot = nodeMatches[0].matchNum % 2 === 0;
+                                if (isLeftSlot) {
+                                    if (!m.isReturn) m.home = winner; else m.away = winner;
+                                } else {
+                                    if (!m.isReturn) m.away = winner; else m.home = winner;
+                                }
+                            });
+                        }
+                    }
+
+                    saveData();
+                    showToast("Placar atualizado!");
+                }
+            }
+        }
+
+        /* --- RENDER ENGINE --- */
+        function getPlayerObj(id) { return state.players.find(p => p.id === id) || { name: 'Desconhecido', logo: '' }; }
+
+        function getParticipantObj(champ, id) {
+            if (!id) return { playerName: 'TBD (A Definir)', name: 'TBD', logo: '', teamName: '' };
+            if (id === 'BYE') return { playerName: 'BYE', name: 'BYE', logo: '', teamName: '' };
+            let player = getPlayerObj(id);
+            let teamId = champ.participants ? champ.participants[id] : null;
+            let team = state.teams.find(t => t.id === teamId);
+            return {
+                id: player.id,
+                playerName: player.name,
+                name: team ? `${player.name} (${team.name})` : player.name,
+                logo: team ? team.logo : player.logo,
+                teamName: team ? team.name : ''
+            };
+        }
+
+        function getChampion(champ) {
+            if (!champ.matches || champ.matches.length === 0) return null;
+            
+            // Lógica de Campeão para Mata-Mata
+            if (champ.format === 'knockout' && champ.matches[0].nodeId) {
+                const finalNodes = champ.matches.filter(m => !m.nextId);
+                if (!finalNodes.length || !finalNodes.every(m => m.played)) return null;
+                
+                let hScore = 0; let aScore = 0;
+                let homeId = finalNodes[0].home;
+                let awayId = finalNodes[0].away;
+                if(!homeId || !awayId) return null;
+                
+                finalNodes.forEach(m => {
+                    if (m.home === homeId) { hScore += m.homeGoals; aScore += m.awayGoals; }
+                    else { hScore += m.awayGoals; aScore += m.homeGoals; }
+                });
+                
+                if (hScore > aScore) return getParticipantObj(champ, homeId);
+                if (aScore > hScore) return getParticipantObj(champ, awayId);
+                return getParticipantObj(champ, homeId);
+            }
+            
+            // Lógica de Campeão para Pontos Corridos
+            let table = {};
+            champ.teamIds.forEach(id => {
+                table[id] = { id, p: 0, sg: 0, gp: 0, gc: 0 };
+            });
+            champ.matches.forEach(m => {
+                if (m.played && m.home !== 'BYE' && m.away !== 'BYE') {
+                    if(!table[m.home] || !table[m.away]) return;
+                    table[m.home].gp += m.homeGoals; table[m.home].gc += m.awayGoals;
+                    table[m.away].gp += m.awayGoals; table[m.away].gc += m.homeGoals;
+                    if (m.homeGoals > m.awayGoals) { table[m.home].p += 3; }
+                    else if (m.homeGoals < m.awayGoals) { table[m.away].p += 3; }
+                    else { table[m.home].p++; table[m.away].p++; }
+                }
+            });
+            Object.values(table).forEach(t => t.sg = t.gp - t.gc);
+            let sorted = Object.values(table).sort((a,b) => b.p - a.p || b.sg - a.sg || b.gp - a.gp);
+            return sorted[0] ? getParticipantObj(champ, sorted[0].id) : null;
+        }
+
+        function renderAll() {
+            // Render Players Grid
+            const pGrid = document.getElementById('players-grid');
+            document.getElementById('players-count').innerText = state.players.length;
+            if (state.players.length === 0) {
+                pGrid.innerHTML = `<p class="col-span-full text-slate-500 text-sm font-medium">Nenhum jogador cadastrado no momento.</p>`;
+            } else {
+                pGrid.innerHTML = state.players.map(p => {
+                    const avatar = p.logo 
+                        ? `<img src="${escapeHTML(p.logo)}" class="w-full h-full object-cover" onerror="this.src=''; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center font-display text-4xl text-white/20\\'>${p.name.charAt(0).toUpperCase()}</div>'">` 
+                        : `<div class="w-full h-full flex items-center justify-center font-display text-4xl text-white/20">${p.name.charAt(0).toUpperCase()}</div>`;
+                    
+                    const controlsHtml = isAdmin ? `
+                        <div class="flex gap-2 w-full mt-3">
+                            <button onclick="openEditPlayer('${p.id}')" class="flex-1 text-slate-400 hover:text-white hover:bg-white/10 py-1.5 bg-black/40 rounded-lg transition-colors border border-white/5"><i class="ph-bold ph-pencil-simple text-xs"></i></button>
+                            <button onclick="removePlayer('${p.id}')" class="flex-1 text-red-400 hover:text-white hover:bg-red-500 py-1.5 bg-black/40 rounded-lg transition-colors border border-white/5"><i class="ph-bold ph-trash text-xs"></i></button>
+                        </div>
+                    ` : '';
+
+                    return `
+                        <div class="glass glass-hover rounded-2xl overflow-hidden flex flex-col group relative pb-4">
+                            <div class="h-32 w-full bg-gradient-to-b from-white/10 to-transparent relative">
+                                ${avatar}
+                                <div class="absolute inset-0 bg-gradient-to-t from-[#141419] to-transparent"></div>
+                            </div>
+                            <div class="px-4 text-center flex-1 flex flex-col justify-end">
+                                <span class="font-display font-bold text-lg w-full truncate text-white block uppercase tracking-wide mt-2">${escapeHTML(p.name)}</span>
+                                ${controlsHtml}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            // Render Teams Grid
+            const tGrid = document.getElementById('teams-grid');
+            if (tGrid) {
+                document.getElementById('teams-count').innerText = state.teams.length;
+                if (state.teams.length === 0) {
+                    tGrid.innerHTML = `<p class="col-span-full text-slate-500 text-sm font-medium">Nenhum clube cadastrado.</p>`;
+                } else {
+                    tGrid.innerHTML = state.teams.map(t => {
+                        const avatar = t.logo 
+                            ? `<img src="${escapeHTML(t.logo)}" class="w-full h-full object-contain p-2 drop-shadow-md" onerror="this.src=''; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center font-display text-4xl text-white/20\\'>${t.name.charAt(0).toUpperCase()}</div>'">` 
+                            : `<div class="w-full h-full flex items-center justify-center font-display text-4xl text-white/20">${t.name.charAt(0).toUpperCase()}</div>`;
+                        
+                        const controlsHtml = isAdmin ? `
+                            <div class="flex gap-2 w-full mt-3">
+                                <button onclick="openEditTeam('${t.id}')" class="flex-1 text-slate-400 hover:text-white hover:bg-white/10 py-1.5 bg-black/40 rounded-lg transition-colors border border-white/5"><i class="ph-bold ph-pencil-simple text-xs"></i></button>
+                                <button onclick="removeTeam('${t.id}')" class="flex-1 text-red-400 hover:text-white hover:bg-red-500 py-1.5 bg-black/40 rounded-lg transition-colors border border-white/5"><i class="ph-bold ph-trash text-xs"></i></button>
+                            </div>
+                        ` : '';
+
+                        return `
+                            <div class="glass glass-hover rounded-2xl overflow-hidden flex flex-col group relative pb-4 border border-white/5 hover:border-brand-500/30">
+                                <div class="h-28 w-full bg-white/[0.02] relative flex items-center justify-center">
+                                    ${avatar}
+                                    <div class="absolute inset-0 bg-gradient-to-t from-[#141419] to-transparent"></div>
+                                </div>
+                                <div class="px-4 text-center flex-1 flex flex-col justify-end relative z-10 mt-1">
+                                    <span class="font-display font-bold text-sm w-full truncate text-white block uppercase tracking-wide" title="${escapeHTML(t.name)}">${escapeHTML(t.name)}</span>
+                                    ${controlsHtml}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
+            // Render Home Champs Grid
+            const cGrid = document.getElementById('champs-grid');
+            const hofSection = document.getElementById('hall-of-fame-section');
+            const hofGrid = document.getElementById('hall-of-fame-grid');
+            
+            let activeChamps = [];
+            let finishedChamps = [];
+            
+            state.championships.forEach(c => {
+                const totalMatches = c.matches.length;
+                const played = c.matches.filter(m => m.played).length;
+                if (totalMatches > 0 && played === totalMatches) {
+                    finishedChamps.push({ ...c, totalMatches, played });
+                } else {
+                    activeChamps.push({ ...c, totalMatches, played });
+                }
+            });
+
+            if (activeChamps.length === 0) {
+                cGrid.innerHTML = `<p class="col-span-full text-slate-500 text-sm font-medium">Nenhum torneio ativo no momento.</p>`;
+            } else {
+                cGrid.innerHTML = activeChamps.map(c => {
+                    const pct = c.totalMatches > 0 ? Math.round((c.played / c.totalMatches) * 100) : 0;
+                    const formatStr = c.format === 'league' ? 'Pontos Corridos' : 'Mata-Mata';
+                    
+                    return `
+                        <div class="glass glass-hover p-6 rounded-2xl cursor-pointer group relative overflow-hidden" onclick="openChampDetails('${c.id}')">
+                            <div class="absolute -top-10 -right-10 w-32 h-32 bg-brand-500/5 blur-3xl rounded-full group-hover:bg-brand-500/10 transition-all"></div>
+                            
+                            <span class="text-[9px] uppercase font-bold tracking-[0.2em] text-black bg-brand-500 px-3 py-1 rounded-full shadow-[0_0_10px_rgba(200,255,0,0.2)]">${formatStr}</span>
+                            
+                            <h3 class="font-display text-2xl font-black mt-5 mb-1 text-white group-hover:text-brand-500 transition-colors uppercase tracking-wide truncate">${escapeHTML(c.name)}</h3>
+                            <p class="text-xs text-slate-400 mb-6 font-medium">${c.teamIds.length} Equipes Participantes</p>
+                            
+                            <div class="space-y-2 mt-auto">
+                                <div class="flex justify-between text-[10px] font-bold tracking-wider uppercase">
+                                    <span class="text-slate-500">Progresso</span>
+                                    <span class="text-white">${c.played}/${c.totalMatches} CONFRONTOS</span>
+                                </div>
+                                <div class="w-full bg-black/60 h-1.5 rounded-full overflow-hidden border border-white/5">
+                                    <div class="bg-brand-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(200,255,0,0.5)]" style="width: ${pct}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            if (finishedChamps.length > 0 && hofSection && hofGrid) {
+                hofSection.classList.remove('hidden');
+                hofGrid.innerHTML = finishedChamps.map(c => {
+                    const champPlayerObj = getChampion(c);
+                    if (!champPlayerObj) return '';
+                    
+                    const isLeague = c.format === 'league';
+                    const trophyIconUrl = isLeague ? TROPHY_LEAGUE_URL : TROPHY_CUP_URL;
+                    const trophyLabel = isLeague ? 'CAMPEÃO DA LIGA' : 'CAMPEÃO DA COPA';
+                    
+                    // Nova Taça Customizada (Imagem) com Fallback
+                    const trophyIcon = `
+                        <div class="w-24 h-32 mx-auto mb-5 relative rounded-2xl overflow-hidden border border-yellow-400/30 shadow-[0_0_20px_rgba(250,204,21,0.2)] group-hover:shadow-[0_0_30px_rgba(250,204,21,0.5)] group-hover:border-yellow-400/60 transition-all duration-500 z-10 bg-black/50">
+                            <img src="${trophyIconUrl}" alt="Troféu" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onerror="this.src='https://images.unsplash.com/photo-1578269174936-2709b6aeb913?auto=format&fit=crop&w=400';">
+                            <div class="absolute inset-0 bg-gradient-to-t from-[#141419] via-transparent to-transparent"></div>
+                            <div class="absolute inset-0 bg-yellow-400/10 mix-blend-overlay"></div>
+                        </div>
+                    `;
+
+                    const avatar = champPlayerObj.logo 
+                        ? `<img src="${escapeHTML(champPlayerObj.logo)}" class="w-full h-full object-contain p-1" onerror="this.src=''; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center font-display text-4xl text-white/20\\'>${champPlayerObj.playerName.charAt(0).toUpperCase()}</div>'">` 
+                        : `<div class="w-full h-full flex items-center justify-center font-display text-4xl text-white/20">${champPlayerObj.playerName.charAt(0).toUpperCase()}</div>`;
+                        
+                    return `
+                        <div class="glass glass-hover p-6 rounded-2xl cursor-pointer group relative overflow-hidden text-center border border-yellow-400/30" onclick="openChampDetails('${c.id}')">
+                            <div class="absolute -top-10 -right-10 w-32 h-32 bg-yellow-400/10 blur-3xl rounded-full group-hover:bg-yellow-400/20 transition-all"></div>
+                            
+                            ${trophyIcon}
+                            
+                            <div class="w-20 h-20 mx-auto rounded-full overflow-hidden border-2 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.4)] mb-3 bg-[#141419]">
+                                ${avatar}
+                            </div>
+                            
+                            <h4 class="font-display text-xl font-black text-white uppercase tracking-wide truncate mb-1">${escapeHTML(champPlayerObj.playerName)}</h4>
+                            ${champPlayerObj.teamName ? `<span class="text-[9px] text-slate-400 font-bold uppercase block truncate mb-1">${escapeHTML(champPlayerObj.teamName)}</span>` : ''}
+                            <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-yellow-400 block mb-3 drop-shadow-md">${trophyLabel}</span>
+                            <div class="bg-black/40 py-2 px-3 rounded-lg border border-white/5">
+                                <span class="text-xs text-slate-300 font-bold truncate block" title="${escapeHTML(c.name)}">${escapeHTML(c.name)}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else if (hofSection) {
+                hofSection.classList.add('hidden');
+            }
+
+            // Render Champ Details
+            if (currentChampId) {
+                const champ = state.championships.find(c => c.id === currentChampId);
+                if (!champ) return switchTab('home');
+
+                document.getElementById('detail-champ-name').innerText = champ.name;
+                document.getElementById('detail-champ-info').innerText = champ.format === 'league' ? 'LIGA - PONTOS CORRIDOS' : 'TORNEIO - MATA-MATA';
+
+                const standingsCont = document.getElementById('standings-container');
+                const bracketCont = document.getElementById('bracket-container');
+
+                if (champ.format === 'league') {
+                    standingsCont.classList.remove('hidden');
+                    bracketCont.classList.add('hidden');
+                    let table = {};
+                    champ.teamIds.forEach(id => {
+                        table[id] = { id, p: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0 };
+                    });
+
+                    champ.matches.forEach(m => {
+                        if (m.played && m.home !== 'BYE' && m.away !== 'BYE') {
+                            table[m.home].j++; table[m.away].j++;
+                            table[m.home].gp += m.homeGoals; table[m.home].gc += m.awayGoals;
+                            table[m.away].gp += m.awayGoals; table[m.away].gc += m.homeGoals;
+
+                            if (m.homeGoals > m.awayGoals) { table[m.home].v++; table[m.home].p += 3; table[m.away].d++; }
+                            else if (m.homeGoals < m.awayGoals) { table[m.away].v++; table[m.away].p += 3; table[m.home].d++; }
+                            else { table[m.home].e++; table[m.away].e++; table[m.home].p++; table[m.away].p++; }
+                        }
+                    });
+
+                    Object.values(table).forEach(t => t.sg = t.gp - t.gc);
+                    let sorted = Object.values(table).sort((a,b) => b.p - a.p || b.sg - a.sg || b.gp - a.gp);
+
+                    document.getElementById('standings-body').innerHTML = sorted.map((row, idx) => {
+                        let p = getParticipantObj(champ, row.id);
+                        const isTop = idx === 0;
+                        const rowClass = isTop ? 'bg-brand-500/5' : 'hover:bg-white/[0.02]';
+                        
+                        const avatar = p.logo 
+                            ? `<img src="${escapeHTML(p.logo)}" class="w-full h-full object-contain p-1">` 
+                            : `<div class="w-full h-full flex items-center justify-center font-display text-sm text-white/20">${p.playerName.charAt(0).toUpperCase()}</div>`;
+
+                        return `
+                            <tr class="${rowClass} transition-colors border-b border-white/5 last:border-0 font-medium">
+                                <td class="px-6 py-4 text-center font-display font-bold ${isTop ? 'text-brand-500 text-lg' : 'text-slate-500'}">${idx+1}º</td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-black/50 overflow-hidden flex items-center justify-center border border-white/10 shrink-0 shadow-inner">
+                                            ${avatar}
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="text-white font-bold tracking-wide leading-tight">${escapeHTML(p.playerName)}</span>
+                                            ${p.teamName ? `<span class="text-[9px] text-brand-500 font-bold uppercase truncate max-w-[150px]">${escapeHTML(p.teamName)}</span>` : ''}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-center text-brand-500 font-black text-lg">${row.p}</td>
+                                <td class="px-6 py-4 text-center text-slate-300">${row.j}</td>
+                                <td class="px-6 py-4 text-center text-slate-300">${row.v}</td>
+                                <td class="px-6 py-4 text-center text-slate-300">${row.e}</td>
+                                <td class="px-6 py-4 text-center text-slate-300">${row.d}</td>
+                                <td class="px-6 py-4 text-center font-bold ${row.sg > 0 ? 'text-brand-500' : (row.sg < 0 ? 'text-red-400' : 'text-slate-400')}">${row.sg > 0 ? '+'+row.sg : row.sg}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    // MATA-MATA RENDER
+                    standingsCont.classList.add('hidden');
+                    bracketCont.classList.remove('hidden');
+                    
+                    const bBody = document.getElementById('bracket-body');
+                    
+                    if (champ.matches.length === 0) {
+                         bBody.innerHTML = '<p class="text-slate-500 text-sm font-medium">Nenhum confronto gerado.</p>';
+                    } else if (!champ.matches[0].nodeId) {
+                        bBody.innerHTML = '<p class="text-yellow-500 text-sm font-medium bg-yellow-500/10 p-4 rounded-xl border border-yellow-500/20">Este campeonato foi gerado na versão anterior do sistema. Exclua-o e crie um novo torneio Mata-Mata para visualizar as Chaves.</p>';
+                    } else {
+                        try {
+                            let maxRound = Math.max(...champ.matches.map(m => m.roundNum));
+                            let html = '';
+                            
+                            for (let r = 1; r <= maxRound; r++) {
+                                let roundMatches = champ.matches.filter(m => m.roundNum === r && !m.isReturn);
+                                roundMatches.sort((a, b) => a.matchNum - b.matchNum);
+                                
+                                let roundName = 'Rodada ' + r;
+                                let roundRemaining = maxRound - r + 1;
+                                if (roundRemaining === 1) roundName = 'Final';
+                                else if (roundRemaining === 2) roundName = 'Semifinal';
+                                else if (roundRemaining === 3) roundName = 'Quartas de Final';
+                                else if (roundRemaining === 4) roundName = 'Oitavas de Final';
+                                
+                                html += `<div class="flex flex-col gap-6 justify-around relative min-w-[240px]">
+                                           <h4 class="text-center font-display font-black text-brand-500/50 mb-2 uppercase text-xs tracking-widest bg-brand-500/5 py-2 rounded-lg border border-brand-500/10">${roundName}</h4>`;
+                                
+                                roundMatches.forEach(m => {
+                                    let hg = m.homeGoals; let ag = m.awayGoals;
+                                    let aggregateActive = false;
+
+                                    if (champ.twoway) {
+                                        let returnM = champ.matches.find(rm => rm.nodeId === m.nodeId && rm.isReturn);
+                                        if (returnM && returnM.played && m.played) {
+                                            hg += returnM.awayGoals; ag += returnM.homeGoals;
+                                            aggregateActive = true;
+                                        } else {
+                                            hg = '-'; ag = '-';
+                                        }
+                                    } else {
+                                        if (!m.played) { hg = '-'; ag = '-'; }
+                                    }
+                                    
+                                    let hObj = getParticipantObj(champ, m.home);
+                                    let aObj = getParticipantObj(champ, m.away);
+                                    
+                                    const hgClass = (hg !== '-' && hg > ag) ? 'text-brand-500 drop-shadow-[0_0_5px_rgba(200,255,0,0.5)]' : '';
+                                    const agClass = (ag !== '-' && ag > hg) ? 'text-brand-500 drop-shadow-[0_0_5px_rgba(200,255,0,0.5)]' : '';
+                                    
+                                    html += `
+                                       <div class="bg-black/80 border border-white/10 rounded-xl p-3 w-full flex flex-col gap-2 relative shadow-2xl backdrop-blur-md hover:border-brand-500/30 transition-colors">
+                                           ${aggregateActive ? '<span class="absolute -top-2 -right-2 bg-brand-500 text-black text-[9px] font-black uppercase px-2 py-0.5 rounded shadow-lg">Agregado</span>' : ''}
+                                           <div class="flex items-center justify-between">
+                                               <div class="flex items-center gap-3 overflow-hidden">
+                                                   <div class="w-7 h-7 rounded-full bg-[#141419] overflow-hidden shrink-0 border border-white/10 shadow-inner">
+                                                       ${hObj.logo ? `<img src="${escapeHTML(hObj.logo)}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-[10px] text-white/30 font-bold">${hObj.playerName.charAt(0)}</div>`}
+                                                   </div>
+                                                   <span class="text-xs font-bold text-white truncate ${hgClass}">${escapeHTML(hObj.playerName)}</span>
+                                               </div>
+                                               <span class="text-sm font-black bg-white/5 px-2.5 py-1 rounded text-white ${hgClass}">${hg}</span>
+                                           </div>
+                                           <div class="w-full h-[1px] bg-white/5 my-0.5"></div>
+                                           <div class="flex items-center justify-between">
+                                               <div class="flex items-center gap-3 overflow-hidden">
+                                                   <div class="w-7 h-7 rounded-full bg-[#141419] overflow-hidden shrink-0 border border-white/10 shadow-inner">
+                                                       ${aObj.logo ? `<img src="${escapeHTML(aObj.logo)}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-[10px] text-white/30 font-bold">${aObj.playerName.charAt(0)}</div>`}
+                                                   </div>
+                                                   <span class="text-xs font-bold text-white truncate ${agClass}">${escapeHTML(aObj.playerName)}</span>
+                                               </div>
+                                               <span class="text-sm font-black bg-white/5 px-2.5 py-1 rounded text-white ${agClass}">${ag}</span>
+                                           </div>
+                                       </div>
+                                    `;
+                                });
+                                html += `</div>`;
+                            }
+                            bBody.innerHTML = html;
+                        } catch(err) {
+                            bBody.innerHTML = '<p class="text-red-500 text-sm font-medium bg-red-500/10 p-4 rounded-xl border border-red-500/20">Erro ao renderizar a árvore. Detalhes: ' + err.message + '</p>';
+                        }
+                    }
+                }
+
+                // Render Stats
+                const statsCont = document.getElementById('stats-container');
+                if (statsCont) {
+                    let played = champ.matches.filter(m => m.played && m.home !== 'BYE' && m.away !== 'BYE');
+                    
+                    if (played.length === 0) {
+                        statsCont.innerHTML = `<p class="text-slate-500 text-sm font-medium">Nenhuma estatística disponível. O torneio precisa ter pelo menos um placar registrado.</p>`;
+                    } else {
+                        played.sort((a, b) => (a.roundNum || 0) - (b.roundNum || 0));
+                        
+                        let pStats = {};
+                        champ.teamIds.forEach(id => pStats[id] = { gp: 0, gc: 0, j: 0, currentWin: 0, maxWin: 0, currentUnbeaten: 0, maxUnbeaten: 0 });
+                        
+                        let biggestWin = { text: '-', diff: -1 };
+
+                        played.forEach(m => {
+                            let h = pStats[m.home];
+                            let a = pStats[m.away];
+                            if(h && a) {
+                                h.j++; a.j++;
+                                h.gp += m.homeGoals; h.gc += m.awayGoals;
+                                a.gp += m.awayGoals; a.gc += m.homeGoals;
+                                
+                                if (m.homeGoals > m.awayGoals) {
+                                    h.currentWin++; h.maxWin = Math.max(h.maxWin, h.currentWin);
+                                    h.currentUnbeaten++; h.maxUnbeaten = Math.max(h.maxUnbeaten, h.currentUnbeaten);
+                                    a.currentWin = 0; a.currentUnbeaten = 0;
+                                } else if (m.awayGoals > m.homeGoals) {
+                                    a.currentWin++; a.maxWin = Math.max(a.maxWin, a.currentWin);
+                                    a.currentUnbeaten++; a.maxUnbeaten = Math.max(a.maxUnbeaten, a.currentUnbeaten);
+                                    h.currentWin = 0; h.currentUnbeaten = 0;
+                                } else {
+                                    h.currentWin = 0; h.currentUnbeaten++; h.maxUnbeaten = Math.max(h.maxUnbeaten, h.currentUnbeaten);
+                                    a.currentWin = 0; a.currentUnbeaten++; a.maxUnbeaten = Math.max(a.maxUnbeaten, a.currentUnbeaten);
+                                }
+                                
+                                let diff = Math.abs(m.homeGoals - m.awayGoals);
+                                if (diff > biggestWin.diff) {
+                                    biggestWin.diff = diff;
+                                    let hName = getParticipantObj(champ, m.home).playerName;
+                                    let aName = getParticipantObj(champ, m.away).playerName;
+                                    biggestWin.text = `<span class="truncate">${escapeHTML(hName)}</span> <span class="text-brand-500 px-3">${m.homeGoals} x ${m.awayGoals}</span> <span class="truncate">${escapeHTML(aName)}</span>`;
+                                }
+                            }
+                        });
+
+                        let bestAttack = { name: '-', val: -1 };
+                        let worstAttack = { name: '-', val: 999 };
+                        let bestDefense = { name: '-', val: 999 };
+                        let worstDefense = { name: '-', val: -1 };
+                        let topWinStreak = { name: '-', val: 0 };
+                        let topUnbeatenStreak = { name: '-', val: 0 };
+
+                        Object.entries(pStats).forEach(([id, s]) => {
+                            if (s.j === 0) return;
+                            let pName = getParticipantObj(champ, id).playerName;
+                            if (s.gp > bestAttack.val) bestAttack = { name: pName, val: s.gp };
+                            if (s.gp < worstAttack.val) worstAttack = { name: pName, val: s.gp };
+                            if (s.gc < bestDefense.val) bestDefense = { name: pName, val: s.gc };
+                            if (s.gc > worstDefense.val) worstDefense = { name: pName, val: s.gc };
+                            if (s.maxWin > topWinStreak.val) topWinStreak = { name: pName, val: s.maxWin };
+                            if (s.maxUnbeaten > topUnbeatenStreak.val) topUnbeatenStreak = { name: pName, val: s.maxUnbeaten };
+                        });
+                        
+                        if(worstAttack.val === 999) worstAttack.val = 0;
+                        if(bestDefense.val === 999) bestDefense.val = 0;
+
+                        const isFinished = champ.matches.length > 0 && champ.matches.every(m => m.played);
+                        let championBanner = '';
+                        
+                        if (isFinished) {
+                            const champPlayerObj = getChampion(champ);
+                            if (champPlayerObj) {
+                                const isLeague = champ.format === 'league';
+                                const trophyImgUrl = isLeague ? TROPHY_LEAGUE_URL : TROPHY_CUP_URL;
+                                const trophyLabel = isLeague ? 'CAMPEÃO DA LIGA' : 'CAMPEÃO DA COPA';
+                                
+                                const avatar = champPlayerObj.logo 
+                                    ? `<img src="${escapeHTML(champPlayerObj.logo)}" class="w-full h-full object-contain p-1">` 
+                                    : `<div class="w-full h-full flex items-center justify-center font-display text-3xl text-white/20">${champPlayerObj.playerName.charAt(0).toUpperCase()}</div>`;
+                                championBanner = `
+                                    <div class="glass col-span-2 md:col-span-3 lg:col-span-4 p-6 rounded-2xl border border-yellow-400/50 relative overflow-hidden flex items-center gap-6 bg-gradient-to-r from-yellow-400/10 to-transparent mb-2">
+                                        <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.4)] bg-[#141419] shrink-0 z-10">
+                                            ${avatar}
+                                        </div>
+                                        <div class="z-10">
+                                            <span class="text-[10px] text-yellow-400 font-bold uppercase tracking-widest block mb-1"><i class="ph-fill ph-trophy"></i> ${trophyLabel}</span>
+                                            <h4 class="font-display text-3xl text-white uppercase tracking-wide truncate drop-shadow-md">${escapeHTML(champPlayerObj.playerName)}</h4>
+                                            ${champPlayerObj.teamName ? `<span class="text-xs text-yellow-400/80 font-bold uppercase block truncate mt-1">Representando o ${escapeHTML(champPlayerObj.teamName)}</span>` : ''}
+                                        </div>
+                                        <div class="absolute right-0 top-0 bottom-0 w-1/2 opacity-50 pointer-events-none" style="mask-image: linear-gradient(to left, black, transparent); -webkit-mask-image: linear-gradient(to left, black, transparent);">
+                                            <img src="${trophyImgUrl}" class="w-full h-full object-cover object-center mix-blend-screen" onerror="this.src='https://images.unsplash.com/photo-1578269174936-2709b6aeb913?auto=format&fit=crop&w=400';">
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        }
+
+                        statsCont.innerHTML = `
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                ${championBanner}
+                                <div class="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
+                                    <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-brand-500/10 transition-colors"><i class="ph-fill ph-sword"></i></div>
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Melhor Ataque</span>
+                                    <h4 class="font-display text-xl text-white truncate mt-1" title="${bestAttack.name}">${bestAttack.name}</h4>
+                                    <span class="text-brand-500 font-black text-2xl">${bestAttack.val} <span class="text-xs text-slate-500 font-bold">GOLS</span></span>
+                                </div>
+                                <div class="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
+                                    <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-red-500/10 transition-colors"><i class="ph-fill ph-shield-slash"></i></div>
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Pior Defesa</span>
+                                    <h4 class="font-display text-xl text-white truncate mt-1" title="${worstDefense.name}">${worstDefense.name}</h4>
+                                    <span class="text-red-400 font-black text-2xl">${worstDefense.val} <span class="text-xs text-slate-500 font-bold">SOFRIDOS</span></span>
+                                </div>
+                                <div class="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
+                                    <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-brand-500/10 transition-colors"><i class="ph-fill ph-shield-check"></i></div>
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Melhor Defesa</span>
+                                    <h4 class="font-display text-xl text-white truncate mt-1" title="${bestDefense.name}">${bestDefense.name}</h4>
+                                    <span class="text-brand-500 font-black text-2xl">${bestDefense.val} <span class="text-xs text-slate-500 font-bold">SOFRIDOS</span></span>
+                                </div>
+                                <div class="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
+                                    <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-red-500/10 transition-colors"><i class="ph-fill ph-trend-down"></i></div>
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Pior Ataque</span>
+                                    <h4 class="font-display text-xl text-white truncate mt-1" title="${worstAttack.name}">${worstAttack.name}</h4>
+                                    <span class="text-red-400 font-black text-2xl">${worstAttack.val} <span class="text-xs text-slate-500 font-bold">GOLS</span></span>
+                                </div>
+                                <div class="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
+                                    <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-brand-500/10 transition-colors"><i class="ph-fill ph-fire"></i></div>
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Maior Seq. Vitórias</span>
+                                    <h4 class="font-display text-xl text-white truncate mt-1" title="${topWinStreak.name}">${topWinStreak.name}</h4>
+                                    <span class="text-brand-500 font-black text-2xl">${topWinStreak.val} <span class="text-xs text-slate-500 font-bold">JOGOS</span></span>
+                                </div>
+                                <div class="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
+                                    <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-brand-500/10 transition-colors"><i class="ph-fill ph-lock-key"></i></div>
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Invencibilidade</span>
+                                    <h4 class="font-display text-xl text-white truncate mt-1" title="${topUnbeatenStreak.name}">${topUnbeatenStreak.name}</h4>
+                                    <span class="text-brand-500 font-black text-2xl">${topUnbeatenStreak.val} <span class="text-xs text-slate-500 font-bold">JOGOS</span></span>
+                                </div>
+                                <div class="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group md:col-span-2">
+                                    <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-brand-500/10 transition-colors"><i class="ph-fill ph-trophy"></i></div>
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Maior Goleada</span>
+                                    <h4 class="font-display text-lg md:text-xl text-white mt-1 flex items-center w-full">${biggestWin.text}</h4>
+                                    <span class="text-brand-500 font-black text-xs md:text-sm mt-1 block">Diferença de ${biggestWin.diff} gols</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            }
+            
+            if (isAdmin) renderAdminChamps();
+        }
+
+        function renderAdminChamps() {
+            const select = document.getElementById('admin-champ-select');
+            if (!select) return;
+            
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">-- Escolha um Torneio --</option>' + 
+                state.championships.map(c => `<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
+            
+            if (state.championships.some(c => c.id === currentVal)) {
+                select.value = currentVal;
+            } else {
+                select.value = '';
+            }
+            onAdminChampChange();
+        }
+
+        function onAdminChampChange() {
+            const champId = document.getElementById('admin-champ-select').value;
+            const selectorContainer = document.getElementById('admin-match-selector-container');
+            const homeSelect = document.getElementById('admin-home-select');
+            const awaySelect = document.getElementById('admin-away-select');
+            const editor = document.getElementById('admin-single-match-editor');
+
+            const oldHome = homeSelect ? homeSelect.value : '';
+            const oldAway = awaySelect ? awaySelect.value : '';
+
+            if (editor) editor.innerHTML = '';
+
+            if (!champId) {
+                if (selectorContainer) selectorContainer.classList.add('hidden');
+                return;
+            }
+
+            const champ = state.championships.find(c => c.id === champId);
+            if (!champ) return;
+
+            let options = '<option value="">-- Selecione o Jogador --</option>';
+            champ.teamIds.forEach(tId => {
+                const p = getParticipantObj(champ, tId);
+                options += `<option value="${tId}">${escapeHTML(p.name)}</option>`;
+            });
+
+            if (homeSelect) {
+                homeSelect.innerHTML = options;
+                if (champ.teamIds.includes(oldHome)) homeSelect.value = oldHome;
+            }
+            if (awaySelect) {
+                awaySelect.innerHTML = options;
+                if (champ.teamIds.includes(oldAway)) awaySelect.value = oldAway;
+            }
+
+            if (selectorContainer) selectorContainer.classList.remove('hidden');
+            
+            if (homeSelect && awaySelect && homeSelect.value && awaySelect.value) {
+                findAndRenderAdminMatch();
+            }
+        }
+
+        function findAndRenderAdminMatch() {
+            const champId = document.getElementById('admin-champ-select').value;
+            const homeId = document.getElementById('admin-home-select').value;
+            const awayId = document.getElementById('admin-away-select').value;
+            const editor = document.getElementById('admin-single-match-editor');
+
+            if (!editor) return;
+            editor.innerHTML = '';
+
+            if (!champId || !homeId || !awayId) return;
+
+            if (homeId === awayId) {
+                editor.innerHTML = '<p class="text-red-400 text-sm font-medium text-center bg-red-500/10 p-4 rounded-xl border border-red-500/20">Um jogador não pode jogar contra si mesmo.</p>';
+                return;
+            }
+
+            const champ = state.championships.find(c => c.id === champId);
+            if (!champ) return;
+
+            const match = champ.matches.find(m => m.home === homeId && m.away === awayId);
+
+            if (!match) {
+                editor.innerHTML = '<p class="text-yellow-400 text-sm font-medium text-center bg-yellow-500/10 p-4 rounded-xl border border-yellow-500/20">Este confronto não está previsto na tabela (ou a ordem de mandante/visitante está invertida).</p>';
+                return;
+            }
+
+            const hObj = getParticipantObj(champ, match.home);
+            const aObj = getParticipantObj(champ, match.away);
+            
+            const hVal = match.homeGoals !== null ? match.homeGoals : '';
+            const aVal = match.awayGoals !== null ? match.awayGoals : '';
+            const roundBadge = match.roundNum ? `<span class="absolute -top-3 left-6 bg-brand-500 text-black text-xs font-black uppercase tracking-wider px-3 py-1 rounded-md shadow-lg border border-brand-500/20">Rodada ${match.roundNum}</span>` : '';
+            
+            const inputClasses = `w-16 h-14 bg-black/40 text-center text-3xl font-display font-black focus:outline-none rounded-xl transition-colors border border-transparent text-brand-500 focus:bg-white/10 focus:border-brand-500/50`;
+
+            editor.innerHTML = `
+                <div class="glass p-8 rounded-3xl flex flex-col relative mt-6 border border-brand-500/30 shadow-[0_0_30px_rgba(200,255,0,0.1)]">
+                    ${roundBadge}
+                    <div class="flex items-center justify-between gap-6 mt-4">
+                        <div class="flex-1 flex flex-col items-end">
+                            <span class="font-display text-2xl tracking-wide truncate max-w-full ${match.homeGoals > match.awayGoals && match.played ? 'text-brand-500 font-bold' : 'text-white'}">${escapeHTML(hObj.playerName)}</span>
+                            ${hObj.teamName ? `<span class="text-[10px] text-slate-400 font-bold uppercase truncate max-w-full">${escapeHTML(hObj.teamName)}</span>` : ''}
+                        </div>
+                        
+                        <div class="flex gap-4 items-center bg-black/50 p-4 rounded-2xl border border-white/5 shadow-inner shrink-0">
+                            <input type="number" min="0" id="admin-h-${match.id}" value="${hVal}" placeholder="-" class="${inputClasses}">
+                            <span class="text-slate-600 text-lg font-black">X</span>
+                            <input type="number" min="0" id="admin-a-${match.id}" value="${aVal}" placeholder="-" class="${inputClasses}">
+                        </div>
+                        
+                        <div class="flex-1 flex flex-col items-start">
+                            <span class="font-display text-2xl tracking-wide truncate max-w-full ${match.awayGoals > match.homeGoals && match.played ? 'text-brand-500 font-bold' : 'text-white'}">${escapeHTML(aObj.playerName)}</span>
+                            ${aObj.teamName ? `<span class="text-[10px] text-slate-400 font-bold uppercase truncate max-w-full">${escapeHTML(aObj.teamName)}</span>` : ''}
+                        </div>
+                    </div>
+                    <button onclick="saveScore('${champId}', '${match.id}')" class="w-full mt-8 bg-brand-500 hover:bg-brand-600 text-black text-sm border border-transparent font-bold py-4 rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-brand-500/20">Salvar Placar Oficial</button>
+                </div>
+            `;
+        }
+
+        // Init
+        loadData();
+    </script>
+</body>
+</html>
