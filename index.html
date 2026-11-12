@@ -1320,7 +1320,31 @@ async function saveData() {
                     const isLeague = c.format === 'league';
                     const trophyIconUrl = isLeague ? TROPHY_LEAGUE_URL : TROPHY_CUP_URL;
                     const trophyLabel = isLeague ? 'CAMPEÃO DA LIGA' : 'CAMPEÃO DA COPA';
-                    
+
+                    return `
+                        <div class="glass p-6 rounded-2xl relative overflow-hidden flex flex-col items-center text-center group">
+                            <div class="absolute -top-10 -right-10 w-32 h-32 bg-yellow-400/5 blur-3xl rounded-full"></div>
+                            
+                            <!-- Imagem do Troféu -->
+                            <div class="w-24 h-28 mb-4 relative flex items-center justify-center">
+                                <img src="${trophyIconUrl}" alt="Troféu" class="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(250,204,21,0.4)]">
+                            </div>
+
+                            <!-- Foto/Logo do Jogador Campeão -->
+                            <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-yellow-400 mb-3 shadow-[0_0_10px_rgba(250,204,21,0.3)] bg-black/40">
+                                <img src="${champPlayerObj.logo || 'https://via.placeholder.com/150'}" alt="${champPlayerObj.name}" class="w-full h-full object-cover">
+                            </div>
+
+                            <!-- Textos devidamente contidos na caixa -->
+                            <span class="text-[9px] uppercase font-bold tracking-[0.2em] text-black bg-yellow-400 px-3 py-1 rounded-full mb-2">${trophyLabel}</span>
+                            <h4 class="font-display text-lg font-black text-white uppercase tracking-wide truncate w-full">${escapeHTML(champPlayerObj.name)}</h4>
+                            <p class="text-xs text-slate-400 font-medium truncate w-full mt-0.5">${escapeHTML(c.name)}</p>
+                        </div>
+                    `;
+                }).join('');
+            } else if (hofSection) {
+                hofSection.classList.add('hidden');
+            }
                     // Nova Taça Customizada (Imagem) com Fallback
                     const trophyIcon = `
                         <div class="w-24 h-32 mx-auto mb-5 relative rounded-2xl overflow-hidden border border-yellow-400/30 shadow-[0_0_20px_rgba(250,204,21,0.2)] group-hover:shadow-[0_0_30px_rgba(250,204,21,0.5)] group-hover:border-yellow-400/60 transition-all duration-500 z-10 bg-black/50">
