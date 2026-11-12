@@ -1228,7 +1228,7 @@ async function saveData() {
                 }).join('');
             }
             
-           // Render Teams Grid
+          // Render Teams Grid
             const tGrid = document.getElementById('teams-grid');
             if (tGrid) {
                 document.getElementById('teams-count').innerText = state.teams.length;
@@ -1237,7 +1237,7 @@ async function saveData() {
                 } else {
                     tGrid.innerHTML = state.teams.map(t => {
                         const avatar = t.logo 
-                            ? `<img src="${escapeHTML(t.logo)}" class="w-full h-full object-contain p-2 drop-shadow-md" onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center font-display text-4xl text-white/20\\'>${t.name.charAt(0).toUpperCase()}</div>'">` 
+                            ? `<img src="${escapeHTML(t.logo)}" class="w-full h-full object-contain p-2 drop-shadow-md">` 
                             : `<div class="w-full h-full flex items-center justify-center font-display text-4xl text-white/20">${t.name.charAt(0).toUpperCase()}</div>`;
                         
                         const controlsHtml = isAdmin ? `
