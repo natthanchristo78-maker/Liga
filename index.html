@@ -1281,34 +1281,37 @@ async function saveData() {
             });
 
             if (activeChamps.length === 0) {
-                cGrid.innerHTML = `<p class="col-span-full text-slate-500 text-sm font-medium">Nenhum torneio ativo no momento.</p>`;
-            } else {
-                cGrid.innerHTML = activeChamps.map(c => {
-                    const pct = c.totalMatches > 0 ? Math.round((c.played / c.totalMatches) * 100) : 0;
-                    const formatStr = c.format === 'league' ? 'Pontos Corridos' : 'Mata-Mata';
-                    
-                    return `
-                        <div class="glass glass-hover p-6 rounded-2xl cursor-pointer group relative overflow-hidden" onclick="openChampDetails('${c.id}')">
-                            <div class="absolute -top-10 -right-10 w-32 h-32 bg-brand-500/5 blur-3xl rounded-full group-hover:bg-brand-500/10 transition-all"></div>
-                            
-                            <span class="text-[9px] uppercase font-bold tracking-[0.2em] text-black bg-brand-500 px-3 py-1 rounded-full shadow-[0_0_10px_rgba(200,255,0,0.2)]">${formatStr}</span>
-                            
-                            <h3 class="font-display text-2xl font-black mt-5 mb-1 text-white group-hover:text-brand-500 transition-colors uppercase tracking-wide truncate">${escapeHTML(c.name)}</h3>
-                            <p class="text-xs text-slate-400 mb-6 font-medium">${c.teamIds.length} Equipes Participantes</p>
-                            
-                            <div class="space-y-2 mt-auto">
-                                <div class="flex justify-between text-[10px] font-bold tracking-wider uppercase">
-                                    <span class="text-slate-500">Progresso</span>
-                                    <span class="text-white">${c.played}/${c.totalMatches} CONFRONTOS</span>
-                                </div>
-                                <div class="w-full bg-black/60 h-1.5 rounded-full overflow-hidden border border-white/5">
-                                    <div class="bg-brand-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(200,255,0,0.5)]" style="width: ${pct}%"></div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
+                cGrid.innerHTML = `<p class="col-span-full text-slate-500 text-sm font-medium">Nenhum torneio ativo no momento.</p>`;
+            } else {
+                // O ".filter(c => c.name)" ignora torneios fantasmas salvos com erro no passado
+                cGrid.innerHTML = activeChamps.filter(c => c && c.name).map(c => {
+                    const pct = c.totalMatches > 0 ? Math.round((c.played / c.totalMatches) * 100) : 0;
+                    const formatStr = c.format === 'league' ? 'Pontos Corridos' : 'Mata-Mata';
+                    
+                    return `
+                        <div class="glass glass-hover p-6 rounded-2xl cursor-pointer group relative overflow-hidden flex flex-col w-full" onclick="openChampDetails('${c.id}')">
+                            <div class="absolute -top-10 -right-10 w-32 h-32 bg-brand-500/5 blur-3xl rounded-full group-hover:bg-brand-500/10 transition-all"></div>
+                            
+                            <div class="flex items-start w-full">
+                                <span class="text-[9px] uppercase font-bold tracking-[0.2em] text-black bg-brand-500 px-3 py-1 rounded-full shadow-[0_0_10px_rgba(200,255,0,0.2)]">${formatStr}</span>
+                            </div>
+                            
+                            <h3 class="font-display text-2xl font-black mt-5 mb-1 text-white group-hover:text-brand-500 transition-colors uppercase tracking-wide truncate w-full">${escapeHTML(c.name)}</h3>
+                            <p class="text-xs text-slate-400 mb-6 font-medium truncate w-full">${c.teamIds ? c.teamIds.length : 0} Equipes Participantes</p>
+                            
+                            <div class="space-y-2 mt-auto w-full">
+                                <div class="flex justify-between text-[10px] font-bold tracking-wider uppercase">
+                                    <span class="text-slate-500">Progresso</span>
+                                    <span class="text-white">${c.played || 0}/${c.totalMatches || 0} CONFRONTOS</span>
+                                </div>
+                                <div class="w-full bg-black/60 h-1.5 rounded-full overflow-hidden border border-white/5">
+                                    <div class="bg-brand-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(200,255,0,0.5)]" style="width: ${pct}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
 
             if (finishedChamps.length > 0 && hofSection && hofGrid) {
                 hofSection.classList.remove('hidden');
