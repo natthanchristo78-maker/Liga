@@ -1320,17 +1320,17 @@ async function saveData() {
                     const trophyIconUrl = isLeague ? TROPHY_LEAGUE_URL : TROPHY_CUP_URL;
                     const trophyLabel = isLeague ? 'CAMPEÃO DA LIGA' : 'CAMPEÃO DA COPA';
                     
-                    // Nova Taça Customizada (Imagem) com Fallback
+                  // Nova Taça Customizada (Imagem) limpa
                     const trophyIcon = `
                         <div class="w-24 h-32 mx-auto mb-5 relative rounded-2xl overflow-hidden border border-yellow-400/30 shadow-[0_0_20px_rgba(250,204,21,0.2)] group-hover:shadow-[0_0_30px_rgba(250,204,21,0.5)] group-hover:border-yellow-400/60 transition-all duration-500 z-10 bg-black/50">
-                            <img src="${trophyIconUrl}" alt="Troféu" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" https://images.unsplash.com/photo-1578269174936-2709b6aeb913?auto=format&fit=crop&w=400';">
+                            <img src="${trophyIconUrl}" alt="Troféu" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
                             <div class="absolute inset-0 bg-gradient-to-t from-[#141419] via-transparent to-transparent"></div>
                             <div class="absolute inset-0 bg-yellow-400/10 mix-blend-overlay"></div>
                         </div>
                     `;
 
                     const avatar = champPlayerObj.logo 
-                        ? `<img src="${escapeHTML(champPlayerObj.logo)}" class="w-full h-full object-contain p-1" ; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center font-display text-4xl text-white/20\\'>${champPlayerObj.playerName.charAt(0).toUpperCase()}</div>'">` 
+                        ? `<img src="${escapeHTML(champPlayerObj.logo)}" class="w-full h-full object-contain p-1">` 
                         : `<div class="w-full h-full flex items-center justify-center font-display text-4xl text-white/20">${champPlayerObj.playerName.charAt(0).toUpperCase()}</div>`;
                         
                     return `
