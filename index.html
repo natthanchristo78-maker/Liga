@@ -1201,7 +1201,7 @@ async function saveData() {
             } else {
                 pGrid.innerHTML = state.players.map(p => {
                     const avatar = p.logo 
-                        ? `<img src="${escapeHTML(p.logo)}" class="w-full h-full object-cover" onerror="this.src=''; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center font-display text-4xl text-white/20\\'>${p.name.charAt(0).toUpperCase()}</div>'">` 
+                        ? `<img src="${escapeHTML(p.logo)}" class="w-full h-full object-cover" ; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center font-display text-4xl text-white/20\\'>${p.name.charAt(0).toUpperCase()}</div>'">` 
                         : `<div class="w-full h-full flex items-center justify-center font-display text-4xl text-white/20">${p.name.charAt(0).toUpperCase()}</div>`;
                     
                     const controlsHtml = isAdmin ? `
@@ -1235,7 +1235,7 @@ async function saveData() {
                 } else {
                     tGrid.innerHTML = state.teams.map(t => {
                         const avatar = t.logo 
-                            ? `<img src="${escapeHTML(t.logo)}" class="w-full h-full object-contain p-2 drop-shadow-md" onerror="this.src=''; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center font-display text-4xl text-white/20\\'>${t.name.charAt(0).toUpperCase()}</div>'">` 
+                            ? `<img src="${escapeHTML(t.logo)}" class="w-full h-full object-contain p-2 drop-shadow-md"; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center font-display text-4xl text-white/20\\'>${t.name.charAt(0).toUpperCase()}</div>'">` 
                             : `<div class="w-full h-full flex items-center justify-center font-display text-4xl text-white/20">${t.name.charAt(0).toUpperCase()}</div>`;
                         
                         const controlsHtml = isAdmin ? `
@@ -1322,14 +1322,14 @@ async function saveData() {
                     // Nova Taça Customizada (Imagem) com Fallback
                     const trophyIcon = `
                         <div class="w-24 h-32 mx-auto mb-5 relative rounded-2xl overflow-hidden border border-yellow-400/30 shadow-[0_0_20px_rgba(250,204,21,0.2)] group-hover:shadow-[0_0_30px_rgba(250,204,21,0.5)] group-hover:border-yellow-400/60 transition-all duration-500 z-10 bg-black/50">
-                            <img src="${trophyIconUrl}" alt="Troféu" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onerror="this.src='https://images.unsplash.com/photo-1578269174936-2709b6aeb913?auto=format&fit=crop&w=400';">
+                            <img src="${trophyIconUrl}" alt="Troféu" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" https://images.unsplash.com/photo-1578269174936-2709b6aeb913?auto=format&fit=crop&w=400';">
                             <div class="absolute inset-0 bg-gradient-to-t from-[#141419] via-transparent to-transparent"></div>
                             <div class="absolute inset-0 bg-yellow-400/10 mix-blend-overlay"></div>
                         </div>
                     `;
 
                     const avatar = champPlayerObj.logo 
-                        ? `<img src="${escapeHTML(champPlayerObj.logo)}" class="w-full h-full object-contain p-1" onerror="this.src=''; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center font-display text-4xl text-white/20\\'>${champPlayerObj.playerName.charAt(0).toUpperCase()}</div>'">` 
+                        ? `<img src="${escapeHTML(champPlayerObj.logo)}" class="w-full h-full object-contain p-1" ; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center font-display text-4xl text-white/20\\'>${champPlayerObj.playerName.charAt(0).toUpperCase()}</div>'">` 
                         : `<div class="w-full h-full flex items-center justify-center font-display text-4xl text-white/20">${champPlayerObj.playerName.charAt(0).toUpperCase()}</div>`;
                         
                     return `
@@ -1598,7 +1598,7 @@ async function saveData() {
                                             ${champPlayerObj.teamName ? `<span class="text-xs text-yellow-400/80 font-bold uppercase block truncate mt-1">Representando o ${escapeHTML(champPlayerObj.teamName)}</span>` : ''}
                                         </div>
                                         <div class="absolute right-0 top-0 bottom-0 w-1/2 opacity-50 pointer-events-none" style="mask-image: linear-gradient(to left, black, transparent); -webkit-mask-image: linear-gradient(to left, black, transparent);">
-                                            <img src="${trophyImgUrl}" class="w-full h-full object-cover object-center mix-blend-screen" onerror="this.src='https://images.unsplash.com/photo-1578269174936-2709b6aeb913?auto=format&fit=crop&w=400';">
+                                            <img src="${trophyImgUrl}" class="w-full h-full object-cover object-center mix-blend-screen" https://images.unsplash.com/photo-1578269174936-2709b6aeb913?auto=format&fit=crop&w=400';">
                                         </div>
                                     </div>
                                 `;
