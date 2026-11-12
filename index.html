@@ -1263,88 +1263,64 @@ async function saveData() {
                 }
             }
 
-            // Render Home Champs Grid
-            const cGrid = document.getElementById('champs-grid');
-            const hofSection = document.getElementById('hall-of-fame-section');
-            const hofGrid = document.getElementById('hall-of-fame-grid');
-            
-            let activeChamps = [];
-            let finishedChamps = [];
-            
-            state.championships.forEach(c => {
-                const totalMatches = c.matches.length;
-                const played = c.matches.filter(m => m.played).length;
-                if (totalMatches > 0 && played === totalMatches) {
-                    finishedChamps.push({ ...c, totalMatches, played });
-                } else {
-                    activeChamps.push({ ...c, totalMatches, played });
-                }
-            });
+           // Render Home Champs Grid
+            const cGrid = document.getElementById('champs-grid');
+            const hofSection = document.getElementById('hall-of-fame-section');
+            const hofGrid = document.getElementById('hall-of-fame-grid');
+            
+            let activeChamps = [];
+            let finishedChamps = [];
+            
+            state.championships.forEach(c => {
+                const totalMatches = c.matches.length;
+                const played = c.matches.filter(m => m.played).length;
+                if (totalMatches > 0 && played === totalMatches) {
+                    finishedChamps.push({ ...c, totalMatches, played });
+                } else {
+                    activeChamps.push({ ...c, totalMatches, played });
+                }
+            });
 
-            if (activeChamps.length === 0) {
-                cGrid.innerHTML = `<p class="col-span-full text-slate-500 text-sm font-medium">Nenhum torneio ativo no momento.</p>`;
-            } else {
-                cGrid.innerHTML = activeChamps.map(c => {
-                    const pct = c.totalMatches > 0 ? Math.round((c.played / c.totalMatches) * 100) : 0;
-                    const formatStr = c.format === 'league' ? 'Pontos Corridos' : 'Mata-Mata';
+            if (activeChamps.length === 0) {
+                cGrid.innerHTML = `<p class="col-span-full text-slate-500 text-sm font-medium">Nenhum torneio ativo no momento.</p>`;
+            } else {
+                cGrid.innerHTML = activeChamps.map(c => {
+                    const pct = c.totalMatches > 0 ? Math.round((c.played / c.totalMatches) * 100) : 0;
+                    const formatStr = c.format === 'league' ? 'Pontos Corridos' : 'Mata-Mata';
+                    
+                    return `
+                        <div class="glass glass-hover p-6 rounded-2xl cursor-pointer group relative overflow-hidden" onclick="openChampDetails('${c.id}')">
+                            <div class="absolute -top-10 -right-10 w-32 h-32 bg-brand-500/5 blur-3xl rounded-full group-hover:bg-brand-500/10 transition-all"></div>
+                            
+                            <span class="text-[9px] uppercase font-bold tracking-[0.2em] text-black bg-brand-500 px-3 py-1 rounded-full shadow-[0_0_10px_rgba(200,255,0,0.2)]">${formatStr}</span>
+                            
+                            <h3 class="font-display text-2xl font-black mt-5 mb-1 text-white group-hover:text-brand-500 transition-colors uppercase tracking-wide truncate">${escapeHTML(c.name)}</h3>
+                            <p class="text-xs text-slate-400 mb-6 font-medium">${c.teamIds.length} Equipes Participantes</p>
+                            
+                            <div class="space-y-2 mt-auto">
+                                <div class="flex justify-between text-[10px] font-bold tracking-wider uppercase">
+                                    <span class="text-slate-500">Progresso</span>
+                                    <span class="text-white">${c.played}/${c.totalMatches} CONFRONTOS</span>
+                                </div>
+                                <div class="w-full bg-black/60 h-1.5 rounded-full overflow-hidden border border-white/5">
+                                    <div class="bg-brand-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(200,255,0,0.5)]" style="width: ${pct}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            if (finishedChamps.length > 0 && hofSection && hofGrid) {
+                hofSection.classList.remove('hidden');
+                hofGrid.innerHTML = finishedChamps.map(c => {
+                    const champPlayerObj = getChampion(c);
+                    if (!champPlayerObj) return '';
+                    
+                    const isLeague = c.format === 'league';
+                    const trophyIconUrl = isLeague ? TROPHY_LEAGUE_URL : TROPHY_CUP_URL;
+                    const trophyLabel = isLeague ? 'CAMPEÃO DA LIGA' : 'CAMPEÃO DA COPA';
                     
-                    return `
-                        <div class="glass glass-hover p-6 rounded-2xl cursor-pointer group relative overflow-hidden" onclick="openChampDetails('${c.id}')">
-                            <div class="absolute -top-10 -right-10 w-32 h-32 bg-brand-500/5 blur-3xl rounded-full group-hover:bg-brand-500/10 transition-all"></div>
-                            
-                            <span class="text-[9px] uppercase font-bold tracking-[0.2em] text-black bg-brand-500 px-3 py-1 rounded-full shadow-[0_0_10px_rgba(200,255,0,0.2)]">${formatStr}</span>
-                            
-                            <h3 class="font-display text-2xl font-black mt-5 mb-1 text-white group-hover:text-brand-500 transition-colors uppercase tracking-wide truncate">${escapeHTML(c.name)}</h3>
-                            <p class="text-xs text-slate-400 mb-6 font-medium">${c.teamIds.length} Equipes Participantes</p>
-                            
-                            <div class="space-y-2 mt-auto">
-                                <div class="flex justify-between text-[10px] font-bold tracking-wider uppercase">
-                                    <span class="text-slate-500">Progresso</span>
-                                    <span class="text-white">${c.played}/${c.totalMatches} CONFRONTOS</span>
-                                </div>
-                                <div class="w-full bg-black/60 h-1.5 rounded-full overflow-hidden border border-white/5">
-                                    <div class="bg-brand-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(200,255,0,0.5)]" style="width: ${pct}%"></div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            if (finishedChamps.length > 0 && hofSection && hofGrid) {
-                hofSection.classList.remove('hidden');
-                hofGrid.innerHTML = finishedChamps.map(c => {
-                    const champPlayerObj = getChampion(c);
-                    if (!champPlayerObj) return '';
-                    
-                    const isLeague = c.format === 'league';
-                    const trophyIconUrl = isLeague ? TROPHY_LEAGUE_URL : TROPHY_CUP_URL;
-                    const trophyLabel = isLeague ? 'CAMPEÃO DA LIGA' : 'CAMPEÃO DA COPA';
-
-                    return `
-                        <div class="glass p-6 rounded-2xl relative overflow-hidden flex flex-col items-center text-center group">
-                            <div class="absolute -top-10 -right-10 w-32 h-32 bg-yellow-400/5 blur-3xl rounded-full"></div>
-                            
-                            <!-- Imagem do Troféu -->
-                            <div class="w-24 h-28 mb-4 relative flex items-center justify-center">
-                                <img src="${trophyIconUrl}" alt="Troféu" class="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(250,204,21,0.4)]">
-                            </div>
-
-                            <!-- Foto/Logo do Jogador Campeão -->
-                            <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-yellow-400 mb-3 shadow-[0_0_10px_rgba(250,204,21,0.3)] bg-black/40">
-                                <img src="${champPlayerObj.logo || 'https://via.placeholder.com/150'}" alt="${champPlayerObj.name}" class="w-full h-full object-cover">
-                            </div>
-
-                            <!-- Textos devidamente contidos na caixa -->
-                            <span class="text-[9px] uppercase font-bold tracking-[0.2em] text-black bg-yellow-400 px-3 py-1 rounded-full mb-2">${trophyLabel}</span>
-                            <h4 class="font-display text-lg font-black text-white uppercase tracking-wide truncate w-full">${escapeHTML(champPlayerObj.name)}</h4>
-                            <p class="text-xs text-slate-400 font-medium truncate w-full mt-0.5">${escapeHTML(c.name)}</p>
-                        </div>
-                    `;
-                }).join('');
-            } else if (hofSection) {
-                hofSection.classList.add('hidden');
-            }
                     // Nova Taça Customizada (Imagem) com Fallback
                     const trophyIcon = `
                         <div class="w-24 h-32 mx-auto mb-5 relative rounded-2xl overflow-hidden border border-yellow-400/30 shadow-[0_0_20px_rgba(250,204,21,0.2)] group-hover:shadow-[0_0_30px_rgba(250,204,21,0.5)] group-hover:border-yellow-400/60 transition-all duration-500 z-10 bg-black/50">
