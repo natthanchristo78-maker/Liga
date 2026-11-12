@@ -544,8 +544,9 @@ async function loadData() {
 }
 
 async function saveData() {
+    console.log("1. saveData() foi chamada! Dados a salvar:", state);
     try {
-        await fetch(`${SUPABASE_URL}/rest/v1/fc_state?id=eq.1`, {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/fc_state?id=eq.1`, {
             method: 'PATCH',
             headers: {
                 'apikey': SUPABASE_KEY,
@@ -555,8 +556,10 @@ async function saveData() {
             },
             body: JSON.stringify({ data: state })
         });
+        console.log("2. Resposta do Supabase ao salvar:", res.status);
         renderAll();
     } catch (e) {
+        console.error("Erro ao tentar salvar:", e);
         showToast("Erro ao salvar os dados na nuvem.", "error");
     }
 }
