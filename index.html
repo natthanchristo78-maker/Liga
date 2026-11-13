@@ -216,6 +216,7 @@
                 <button onclick="switchTab('home')" id="tab-btn-home" class="px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-brand-500 text-black shadow-lg">Ligas</button>
                 <button onclick="switchTab('players')" id="tab-btn-players" class="px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white hover:bg-white/5">Jogadores</button>
                 <button onclick="switchTab('teams')" id="tab-btn-teams" class="hidden px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white hover:bg-white/5">Clubes</button>
+                <button onclick="switchTab('rules')" id="tab-btn-rules" class="px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white hover:bg-white/5">Regras</button>
                 <button onclick="switchTab('admin')" id="tab-btn-admin" class="hidden px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white hover:bg-white/5">Admin</button>
                 <div class="w-[1px] h-4 bg-white/10 mx-2"></div>
                 <button onclick="openAuthModal()" id="auth-btn" class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white flex items-center">
@@ -227,7 +228,33 @@
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 py-8 relative z-10">
-        
+        <!-- Tab: Rules -->
+        <div id="view-rules" class="hidden space-y-10 animate-[fadeIn_0.5s_ease-out]">
+            <h2 class="text-2xl font-display font-black tracking-widest uppercase text-white flex items-center gap-3">
+                <i class="ph-fill ph-warning-circle text-brand-500"></i>
+                Regras da Liga
+            </h2>
+            
+            <div class="glass rounded-2xl p-6 md:p-10 border border-white/5 space-y-6 text-slate-300 leading-relaxed shadow-xl">
+                <!-- Bloco de Regra 1 -->
+                <div>
+                    <h3 class="text-brand-500 font-bold text-lg uppercase tracking-wide mb-2">1. Formato de Disputa</h3>
+                    <p>Escreva aqui como funcionam os pontos corridos, mata-mata, critérios de desempate, etc.</p>
+                </div>
+                <hr class="border-white/5">
+                <!-- Bloco de Regra 2 -->
+                <div>
+                    <h3 class="text-brand-500 font-bold text-lg uppercase tracking-wide mb-2">2. Desconexões e Bugs</h3>
+                    <p>Escreva aqui a regra caso a internet de algum jogador caia durante a partida (ex: mantém o placar e joga o tempo restante).</p>
+                </div>
+                <hr class="border-white/5">
+                <!-- Bloco de Regra 3 -->
+                <div>
+                    <h3 class="text-brand-500 font-bold text-lg uppercase tracking-wide mb-2">3. Prazos e W.O.</h3>
+                    <p>Escreva aqui o prazo máximo para a realização dos jogos e as penalidades por não comparecimento.</p>
+                </div>
+            </div>
+        </div>
         <!-- Tab: Home (Championships) -->
         <div id="view-home" class="space-y-10 block animate-[fadeIn_0.5s_ease-out]">
             
@@ -755,23 +782,26 @@ async function saveData() {
         }
 
         function switchTab(tab) {
-            ['home', 'players', 'teams', 'champ-details', 'admin'].forEach(t => {
-                const view = document.getElementById(`view-${t}`);
-                if (view) view.classList.add('hidden');
-            });
-            ['home', 'players', 'teams', 'admin'].forEach(t => {
-                const btn = document.getElementById(`tab-btn-${t}`);
-                if (btn) btn.className = "px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white hover:bg-white/5";
-            });
-
-            document.getElementById(`view-${tab}`).classList.remove('hidden');
-            if (tab !== 'champ-details') {
-                const activeBtn = document.getElementById(`tab-btn-${tab}`);
-                if(activeBtn) activeBtn.className = "px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-brand-500 text-black shadow-lg";
-                currentChampId = null;
-            }
-            renderAll();
-        }
+    ['home', 'players', 'teams', 'champ-details', 'admin', 'rules'].forEach(t => {
+        const view = document.getElementById(`view-${t}`);
+        if (view) view.classList.add('hidden');
+    });
+    
+    ['home', 'players', 'teams', 'admin', 'rules'].forEach(t => {
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (btn) btn.className = "px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white hover:bg-white/5";
+    });
+    
+    document.getElementById(`view-${tab}`).classList.remove('hidden');
+    
+    if (tab !== 'champ-details') {
+        const activeBtn = document.getElementById(`tab-btn-${tab}`);
+        if(activeBtn) activeBtn.className = "px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-brand-500 text-black shadow-lg";
+        currentChampId = null;
+    }
+    
+    renderAll();
+}
 
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
