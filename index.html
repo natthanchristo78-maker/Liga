@@ -1286,40 +1286,39 @@ async function saveData() {
         }
 
         function renderAll() {
-            // Render Players Grid
-            const pGrid = document.getElementById('players-grid');
-            document.getElementById('players-count').innerText = state.players.length;
-            if (state.players.length === 0) {
-                pGrid.innerHTML = `<p class="col-span-full text-slate-500 text-sm font-medium">Nenhum jogador cadastrado no momento.</p>`;
-            } else {
-              pGrid.innerHTML = state.players.map(p => {
-                    const avatar = p.logo 
-                        ? `<img src="${escapeHTML(p.logo)}" class="w-full h-full object-cover">` 
-                        : `<div class="w-full h-full flex items-center justify-center font-display text-4xl text-white/20">${escapeHTML(p.name.charAt(0).toUpperCase())}</div>`;
-                  
-                    const controlsHtml = isAdmin ? `
-                        <div class="flex gap-2 w-full mt-3">
-                            <button onclick="openEditPlayer('${p.id}')" class="flex-1 text-slate-400 hover:text-white hover:bg-white/10 py-1.5 bg-black/40 rounded-lg transition-colors border border-white/5"><i class="ph-bold ph-pencil-simple text-xs"></i></button>
-                            <button onclick="removePlayer('${p.id}')" class="flex-1 text-red-400 hover:text-white hover:bg-red-500 py-1.5 bg-black/40 rounded-lg transition-colors border border-white/5"><i class="ph-bold ph-trash text-xs"></i></button>
-                        </div>
-                    ` : '';
+    // Render Players Grid
+    const pGrid = document.getElementById('players-grid');
+    document.getElementById('players-count').innerText = state.players.length;
+    if (state.players.length === 0) {
+        pGrid.innerHTML = `<p class="col-span-full text-slate-500 text-sm font-medium">Nenhum jogador cadastrado no momento.</p>`;
+    } else {
+        pGrid.innerHTML = state.players.map(p => {
+            const avatar = p.logo 
+                ? `<img src="${escapeHTML(p.logo)}" class="w-full h-full object-cover">` 
+                : `<div class="w-full h-full flex items-center justify-center font-display text-4xl text-white/20">${escapeHTML(p.name.charAt(0).toUpperCase())}</div>`;
+            
+            const controlsHtml = isAdmin ? `
+                <div class="flex gap-2 w-full mt-3">
+                    <button onclick="openEditPlayer('${p.id}')" class="flex-1 text-slate-400 hover:text-white hover:bg-white/10 py-1.5 bg-black/40 rounded-lg transition-colors border border-white/5"><i class="ph-bold ph-pencil-simple text-xs"></i></button>
+                    <button onclick="removePlayer('${p.id}')" class="flex-1 text-red-400 hover:text-white hover:bg-red-500 py-1.5 bg-black/40 rounded-lg transition-colors border border-white/5"><i class="ph-bold ph-trash text-xs"></i></button>
+                </div>
+            ` : '';
 
-                    return `
-                        <div class="glass glass-hover rounded-2xl overflow-hidden flex flex-col group relative pb-4 border border-white/5 hover:border-brand-500/30 w-full">
-                            <div class="h-32 w-full bg-white/[0.02] relative flex items-center justify-center overflow-hidden">
-                                ${avatar}
-                                <div class="absolute inset-0 bg-gradient-to-t from-[#141419] to-transparent"></div>
-                            </div>
-                            <div class="px-4 text-center flex-1 flex flex-col justify-end relative z-10 mt-2 w-full overflow-hidden">
-                                <span class="font-display font-bold text-sm w-full truncate text-white block uppercase tracking-wide" title="${escapeHTML(p.name)}">${escapeHTML(p.name)}</span>
-                                ${controlsHtml}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                    `;
-                }).join('');
-            }
+            return `
+                <div class="glass glass-hover rounded-2xl overflow-hidden flex flex-col group relative pb-4 border border-white/5 hover:border-brand-500/30 w-full">
+                    <div class="h-32 w-full bg-white/[0.02] relative flex items-center justify-center overflow-hidden">
+                        ${avatar}
+                        <div class="absolute inset-0 bg-gradient-to-t from-[#141419] to-transparent"></div>
+                    </div>
+                    <div class="px-4 text-center flex-1 flex flex-col justify-end relative z-10 mt-2 w-full overflow-hidden">
+                        <span class="font-display font-bold text-sm w-full truncate text-white block uppercase tracking-wide" title="${escapeHTML(p.name)}">${escapeHTML(p.name)}</span>
+                        ${controlsHtml}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+}
             
           // Render Teams Grid
             const tGrid = document.getElementById('teams-grid');
