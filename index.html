@@ -1295,8 +1295,8 @@ async function saveData() {
               pGrid.innerHTML = state.players.map(p => {
                     const avatar = p.logo 
                         ? `<img src="${escapeHTML(p.logo)}" class="w-full h-full object-cover">` 
-                        : `<div class="w-full h-full flex items-center justify-center font-display text-4xl text-white/20">${p.name.charAt(0).toUpperCase()}</div>`;
-                    
+                        : `<div class="w-full h-full flex items-center justify-center font-display text-4xl text-white/20">${escapeHTML(p.name.charAt(0).toUpperCase())}</div>`;
+                  
                     const controlsHtml = isAdmin ? `
                         <div class="flex gap-2 w-full mt-3">
                             <button onclick="openEditPlayer('${p.id}')" class="flex-1 text-slate-400 hover:text-white hover:bg-white/10 py-1.5 bg-black/40 rounded-lg transition-colors border border-white/5"><i class="ph-bold ph-pencil-simple text-xs"></i></button>
