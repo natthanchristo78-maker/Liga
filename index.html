@@ -28,6 +28,46 @@
         }
     </script>
     <style>
+        /* --- ESTILOS DO PRELOADER --- */
+        /* O fundo (pista) por onde a luz de loading vai passar */
+        .track { stroke: #111827; stroke-width: 6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+        /* O rastro de luz contínuo que vai preenchendo a logo */
+        .neon-trail {
+            stroke: #ff003c; stroke-width: 6; fill: transparent; stroke-linecap: round; stroke-linejoin: round;
+            stroke-dasharray: 100; stroke-dashoffset: 100;
+            filter: drop-shadow(0 0 10px rgba(255, 0, 60, 0.8)) drop-shadow(0 0 20px rgba(255, 0, 60, 0.5));
+            animation: drawLoop 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        @keyframes drawLoop {
+            0% { stroke-dashoffset: 100; opacity: 1; }
+            35% { stroke-dashoffset: 0; opacity: 1; }
+            85% { stroke-dashoffset: 0; opacity: 1; }
+            90% { opacity: 0; stroke-dashoffset: 0; }
+            95% { opacity: 0; stroke-dashoffset: 100; }
+            100% { stroke-dashoffset: 100; opacity: 1; }
+        }
+        /* Revela o interior vermelho sólido e texturizado */
+        .reveal-3d { opacity: 0; animation: revealLoop 4s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+        @keyframes revealLoop {
+            0%, 32% { opacity: 0; }
+            50%, 85% { opacity: 1; }
+            92%, 100% { opacity: 0; }
+        }
+        /* Efeito do Feixe de Luz sincronizado e restrito ao triângulo */
+        .shine-sweep { opacity: 0; animation: sweepLoop 4s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+        @keyframes sweepLoop {
+            0%, 45% { transform: translateX(0px) skewX(-20deg); opacity: 0; }
+            50% { opacity: 1; }
+            75% { transform: translateX(250px) skewX(-20deg); opacity: 1; }
+            80%, 100% { transform: translateX(250px) skewX(-20deg); opacity: 0; }
+        }
+        /* Animação do texto */
+        .fade-in-text { opacity: 0; animation: textLoop 4s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+        @keyframes textLoop {
+            0%, 32% { opacity: 0; transform: translateY(15px); }
+            50%, 85% { opacity: 1; transform: translateY(0); }
+            92%, 100% { opacity: 0; transform: translateY(15px); }
+        }
         body { 
             background-color: #0a0a0c; 
             color: #f8fafc; 
@@ -103,6 +143,56 @@
     </style>
 </head>
 <body class="min-h-screen selection:bg-brand-500 selection:text-black pb-20">
+    <!-- TELA DE CARREGAMENTO -->
+    <div id="preloader" class="fixed inset-0 z-[100] flex items-center justify-center bg-[#030712] transition-opacity duration-700 ease-out" style="font-family: 'Montserrat', sans-serif;">
+        <div class="relative z-10 flex flex-col items-center justify-center">
+            <!-- Silhueta Fluida da Logo -->
+            <div class="w-72 h-72 md:w-96 md:h-96 relative flex items-center justify-center">
+                <svg viewBox="-50 -20 400 340" class="absolute inset-0 w-full h-full overflow-visible">
+                    <defs>
+                        <clipPath id="triangleClip"><path d="M 150,30 L 270,230 L 30,230 Z" /></clipPath>
+                        <pattern id="hex" width="16" height="27.71" patternUnits="userSpaceOnUse" patternTransform="scale(0.8)">
+                            <path d="M8 0 L16 4.62 L16 13.86 L8 18.48 L0 13.86 L0 4.62 Z" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="2" />
+                            <path d="M0 27.71 L8 23.09 L16 27.71" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="2" />
+                        </pattern>
+                        <linearGradient id="redBase" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#ff1a4a" />
+                            <stop offset="50%" stop-color="#cc002c" />
+                            <stop offset="100%" stop-color="#4a0010" />
+                        </linearGradient>
+                        <linearGradient id="shineGrad" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stop-color="transparent" />
+                            <stop offset="30%" stop-color="rgba(255, 255, 255, 0.1)" />
+                            <stop offset="50%" stop-color="rgba(255, 255, 255, 0.8)" />
+                            <stop offset="70%" stop-color="rgba(255, 255, 255, 0.1)" />
+                            <stop offset="100%" stop-color="transparent" />
+                        </linearGradient>
+                    </defs>
+
+                    <path class="track" d="M 150,30 L 270,230 L 30,230 Z" />
+                    <path id="neonTrail" class="neon-trail" pathLength="100" d="M 150,30 L 270,230 L 30,230 Z" />
+                    
+                    <g class="reveal-3d">
+                        <path d="M 150,30 L 270,230 L 30,230 Z" fill="url(#redBase)" />
+                        <path d="M 150,30 L 270,230 L 30,230 Z" fill="url(#hex)" opacity="0.8" />
+                        <path d="M 150,30 L 270,230 L 30,230 Z" fill="none" stroke="rgba(0,0,0,0.6)" stroke-width="12" />
+                        <g clip-path="url(#triangleClip)">
+                            <rect x="0" y="-50" width="100" height="400" fill="url(#shineGrad)" class="shine-sweep" style="mix-blend-mode: overlay;" />
+                        </g>
+                    </g>
+
+                    <g class="reveal-3d fade-in-text" style="font-weight: 900; letter-spacing: 4px; text-transform: uppercase;">
+                        <!-- LIGA (Esquerda) -->
+                        <text x="64" y="115" fill="white" font-size="20" text-anchor="middle" dominant-baseline="middle" transform="rotate(-59.036 64 115)" style="filter: drop-shadow(0 0 5px rgba(255,255,255,0.3));">LIGA</text>
+                        <!-- MINEIRA (Direita) - CORRIGIDO -->
+                        <text x="236" y="115" fill="white" font-size="20" text-anchor="middle" dominant-baseline="middle" transform="rotate(59.036 236 115)" style="filter: drop-shadow(0 0 5px rgba(255,255,255,0.3));">MINEIRA</text>
+                        <!-- DE FIFA (Base) -->
+                        <text x="150" y="265" fill="white" font-size="20" text-anchor="middle" dominant-baseline="middle" style="filter: drop-shadow(0 0 5px rgba(255,255,255,0.3));">DE FIFA</text>
+                    </g>
+                </svg>
+            </div>
+        </div>
+    </div>
 
     <!-- Header -->
     <header class="glass sticky top-0 z-40 border-b-0 border-white/10">
@@ -1783,6 +1873,25 @@ async function saveData() {
 
         // Init
         loadData();
+        // Init
+        loadData();
+
+        // --- LÓGICA DA TELA DE CARREGAMENTO ---
+        window.addEventListener('load', () => {
+            const preloader = document.getElementById('preloader');
+            if (preloader) {
+                setTimeout(() => {
+                    preloader.style.opacity = '0'; 
+                    setTimeout(() => {
+                        preloader.style.display = 'none';
+                    }, 700);
+                }, 1500); 
+            }
+        });
+
+    </script>
+</body>
+</html>
     </script>
 </body>
 </html>
