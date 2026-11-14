@@ -1809,7 +1809,12 @@ async function saveData() {
             
             if (isAdmin) renderAdminChamps();
         }
-
+function toggleMobileMenu() {
+    const menu = document.getElementById('mobile-menu');
+    if (menu) {
+        menu.classList.toggle('hidden');
+    }
+}
         function renderAdminChamps() {
             const select = document.getElementById('admin-champ-select');
             if (!select) return;
