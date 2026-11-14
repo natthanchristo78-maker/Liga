@@ -240,7 +240,19 @@
 
     </div>
 </header>
-
+    
+<!-- Menu Mobile Dropdown -->
+    <div id="mobile-menu" class="hidden md:hidden bg-[#141419]/95 backdrop-blur-md border-b border-white/10 px-6 py-4 space-y-2 relative z-50 animate-fade-in">
+        <button onclick="switchTab('home'); toggleMobileMenu();" class="block w-full text-left px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider text-white hover:bg-white/5 transition-all">Ligas</button>
+        <button onclick="switchTab('players'); toggleMobileMenu();" class="block w-full text-left px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider text-white hover:bg-white/5 transition-all">Jogadores</button>
+        <button onclick="switchTab('teams'); toggleMobileMenu();" class="block w-full text-left px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider text-white hover:bg-white/5 transition-all">Clubes</button>
+        <button onclick="switchTab('rules'); toggleMobileMenu();" class="block w-full text-left px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider text-white hover:bg-white/5 transition-all">Regras</button>
+        <button onclick="switchTab('admin'); toggleMobileMenu();" id="mobile-tab-btn-admin" class="hidden block w-full text-left px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider text-white hover:bg-white/5 transition-all">Admin</button>
+        <button onclick="openAuthModal(); toggleMobileMenu();" class="block w-full text-left px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider text-brand-500 hover:bg-white/5 transition-all flex items-center gap-2">
+            <i class="ph-bold ph-lock-key text-lg"></i> Login Admin
+        </button>
+    </div>
+    
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 py-8 relative z-10">
         <!-- Tab: Rules -->
