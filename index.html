@@ -212,18 +212,39 @@
                     <p class="text-[10px] text-slate-400 font-bold tracking-[0.2em] uppercase mt-1">Liga Mineira</p>
                 </div>
             </div>
-            <nav class="flex gap-1 bg-black/40 p-1.5 rounded-xl border border-white/5 items-center">
-                <button onclick="switchTab('home')" id="tab-btn-home" class="px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-brand-500 text-black shadow-lg">Ligas</button>
-                <button onclick="switchTab('players')" id="tab-btn-players" class="px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white hover:bg-white/5">Jogadores</button>
-                <button onclick="switchTab('teams')" id="tab-btn-teams" class="hidden px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white hover:bg-white/5">Clubes</button>
-                <button onclick="switchTab('rules')" id="tab-btn-rules" class="px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white hover:bg-white/5">Regras</button>
-                <button onclick="switchTab('admin')" id="tab-btn-admin" class="hidden px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white hover:bg-white/5">Admin</button>
-                <div class="w-[1px] h-4 bg-white/10 mx-2"></div>
-                <button onclick="openAuthModal()" id="auth-btn" class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white flex items-center">
-                    <i class="ph-bold ph-lock mr-2 text-lg"></i> <span class="hidden md:inline">Login Admin</span>
+           <!-- Menu Desktop & Hambúrguer -->
+            <div class="flex items-center gap-4">
+                <!-- Links Desktop (visíveis em PC) -->
+                <nav class="hidden md:flex gap-1 bg-black/40 p-1.5 rounded-xl border border-white/5 items-center">
+                    <button onclick="switchTab('home')" id="tab-btn-home" class="px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-brand-500 text-black shadow-lg">Ligas</button>
+                    <button onclick="switchTab('players')" id="tab-btn-players" class="px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white hover:bg-white/5">Jogadores</button>
+                    <button onclick="switchTab('teams')" id="tab-btn-teams" class="px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white hover:bg-white/5">Clubes</button>
+                    <button onclick="switchTab('rules')" id="tab-btn-rules" class="px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white hover:bg-white/5">Regras</button>
+                    <div class="w-[1px] h-4 bg-white/10 mx-2"></div>
+                    <button onclick="switchTab('admin')" id="tab-btn-admin" class="hidden px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white hover:bg-white/5">Admin</button>
+                    <button onclick="openAuthModal()" id="auth-btn" class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-white hover:bg-white/5 flex items-center gap-2">
+                        <i class="ph-bold ph-lock-key text-lg"></i> <span>Login Admin</span>
+                    </button>
+                </nav>
+
+                <!-- Botão do Menu Hambúrguer (Visível em dispositivos móveis/telas menores) -->
+                <button onclick="toggleMobileMenu()" class="md:hidden text-white bg-black/40 p-2.5 rounded-xl border border-white/5 hover:border-brand-500/30 transition-all">
+                    <i class="ph-bold ph-list text-xl"></i>
                 </button>
+            </div>
             </nav>
         </div>
+        <!-- Menu Mobile Dropdown -->
+    <div id="mobile-menu" class="hidden md:hidden bg-[#141419]/95 backdrop-blur-md border-b border-white/10 px-6 py-4 space-y-2 relative z-50 animate-fade-in">
+        <button onclick="switchTab('home'); toggleMobileMenu();" class="block w-full text-left px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider text-white hover:bg-white/5 transition-all">Ligas</button>
+        <button onclick="switchTab('players'); toggleMobileMenu();" class="block w-full text-left px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider text-white hover:bg-white/5 transition-all">Jogadores</button>
+        <button onclick="switchTab('teams'); toggleMobileMenu();" class="block w-full text-left px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider text-white hover:bg-white/5 transition-all">Clubes</button>
+        <button onclick="switchTab('rules'); toggleMobileMenu();" class="block w-full text-left px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider text-white hover:bg-white/5 transition-all">Regras</button>
+        <button onclick="switchTab('admin'); toggleMobileMenu();" id="mobile-tab-btn-admin" class="hidden block w-full text-left px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider text-white hover:bg-white/5 transition-all">Admin</button>
+        <button onclick="openAuthModal(); toggleMobileMenu();" class="block w-full text-left px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider text-brand-500 hover:bg-white/5 transition-all flex items-center gap-2">
+            <i class="ph-bold ph-lock-key text-lg"></i> Login Admin
+        </button>
+    </div>
     </header>
 
     <!-- Main Content -->
