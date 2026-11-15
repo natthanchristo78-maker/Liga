@@ -476,6 +476,50 @@
                     <!-- Matches editable form rendered here -->
                 </div>
             </div>
+            <!-- Quadro de Sorteio da Ordem de Escolha -->
+        <div class="glass p-8 rounded-3xl relative overflow-hidden">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <h3 class="font-display text-2xl font-bold uppercase tracking-wide flex items-center gap-3">
+                    <i class="ph-bold ph-shuffle text-brand-500 text-2xl"></i> Sorteio da Ordem de Escolha
+                </h3>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="toggleAllDraftPlayers(true)" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold uppercase tracking-wider text-slate-300 transition">
+                        Marcar Todos
+                    </button>
+                    <button type="button" onclick="toggleAllDraftPlayers(false)" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold uppercase tracking-wider text-slate-400 transition">
+                        Desmarcar Todos
+                    </button>
+                </div>
+            </div>
+
+            <div class="mb-6 p-6 bg-black/40 rounded-2xl border border-white/5 shadow-inner">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Jogadores Participantes</span>
+                    <span id="draft-selected-count" class="text-xs font-bold text-brand-500">0 selecionados</span>
+                </div>
+                <div id="draft-players-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    <!-- Checkboxes dos jogadores gerados via JS -->
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-4">
+                <button type="button" id="btn-start-draft" onclick="startOrderDraft()" class="px-6 py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm uppercase tracking-wider flex items-center gap-2 transition shadow-lg cursor-pointer">
+                    <i class="ph-bold ph-dice-five text-lg"></i> Realizar Sorteio
+                </button>
+                <button type="button" id="btn-copy-draft" onclick="copyDraftResult()" class="hidden px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm uppercase tracking-wider flex items-center gap-2 transition shadow-lg cursor-pointer">
+                    <i class="ph-bold ph-whatsapp-logo text-lg"></i> Copiar para WhatsApp
+                </button>
+            </div>
+
+            <div id="draft-result-container" class="hidden mt-6 p-6 bg-black/40 rounded-2xl border border-white/5 shadow-inner">
+                <div class="flex items-center justify-between mb-4">
+                    <span id="draft-result-title" class="text-[10px] font-bold text-brand-500 uppercase tracking-widest">Ordem Definida</span>
+                </div>
+                <div id="draft-result-list" class="space-y-2">
+                    <!-- Resultado do sorteio -->
+                </div>
+            </div>
+        </div>
         </div>
 
     </main>
@@ -827,7 +871,154 @@ async function authenticateAdmin() {
             
             renderAll();
         }
+/* --- SORTEIO DA ORDEM DE ESCOLHA --- */
+let draftExcludedIds = new Set();
+let lastDraftResult = [];
+let isDrawingDraft = false;
 
+function renderDraftPlayers() {
+    const container = document.getElementById('draft-players-list');
+    const countEl = document.getElementById('draft-selected-count');
+    if (!container) return;
+
+    const players = Array.isArray(state.players) ? state.players : [];
+    if (players.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-500 col-span-full">Nenhum jogador cadastrado no site.</p>';
+        if (countEl) countEl.textContent = '0 selecionados';
+        return;
+    }
+
+    let selectedCount = 0;
+    container.innerHTML = players.map(p => {
+        const isChecked = !draftExcludedIds.has(p.id);
+        if (isChecked) selectedCount++;
+        return `
+            <label class="flex items-center gap-3 p-3 rounded-xl border ${isChecked ? 'border-brand-500/40 bg-brand-500/10' : 'border-white/5 bg-white/[0.02] opacity-60'} cursor-pointer transition select-none">
+                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleDraftPlayer('${p.id}', this.checked)" class="w-4 h-4 accent-red-600 rounded cursor-pointer">
+                <span class="text-sm font-semibold text-white truncate">${p.name}</span>
+            </label>
+        `;
+    }).join('');
+
+    if (countEl) {
+        countEl.textContent = `${selectedCount} de ${players.length} selecionados`;
+    }
+}
+
+function toggleDraftPlayer(id, checked) {
+    if (checked) {
+        draftExcludedIds.delete(id);
+    } else {
+        draftExcludedIds.add(id);
+    }
+    renderDraftPlayers();
+}
+
+function toggleAllDraftPlayers(selectAll) {
+    const players = Array.isArray(state.players) ? state.players : [];
+    if (selectAll) {
+        draftExcludedIds.clear();
+    } else {
+        players.forEach(p => draftExcludedIds.add(p.id));
+    }
+    renderDraftPlayers();
+}
+
+function shuffleArray(list) {
+    const arr = [...list];
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+function renderDraftResultList(list, isAnimating) {
+    const resultList = document.getElementById('draft-result-list');
+    if (!resultList) return;
+
+    resultList.innerHTML = list.map((p, idx) => {
+        const pos = idx + 1;
+        const isFirst = pos === 1 && !isAnimating;
+        return `
+            <div class="flex items-center justify-between px-4 py-3 rounded-xl border ${isFirst ? 'border-brand-500 bg-brand-500/15' : 'border-white/5 bg-white/[0.03]'} transition">
+                <div class="flex items-center gap-3">
+                    <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black ${isFirst ? 'bg-brand-500 text-white' : 'bg-white/10 text-slate-300'}">${pos}º</span>
+                    <span class="font-bold text-sm text-white">${p.name}</span>
+                </div>
+                ${isFirst ? '<span class="text-[10px] font-bold uppercase tracking-widest text-brand-500">1ª Escolha</span>' : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+function startOrderDraft() {
+    if (isDrawingDraft) return;
+    const players = Array.isArray(state.players) ? state.players : [];
+    const selected = players.filter(p => !draftExcludedIds.has(p.id));
+
+    if (selected.length < 2) {
+        showToast("Selecione pelo menos 2 jogadores para realizar o sorteio.", "error");
+        return;
+    }
+
+    isDrawingDraft = true;
+    const btnStart = document.getElementById('btn-start-draft');
+    const btnCopy = document.getElementById('btn-copy-draft');
+    const resultContainer = document.getElementById('draft-result-container');
+    const resultTitle = document.getElementById('draft-result-title');
+
+    if (btnStart) btnStart.disabled = true;
+    if (btnCopy) btnCopy.classList.add('hidden');
+    if (resultContainer) resultContainer.classList.remove('hidden');
+    if (resultTitle) resultTitle.textContent = 'SORTEANDO ORDEM...';
+
+    let ticks = 0;
+    const maxTicks = 28;
+    const interval = setInterval(() => {
+        ticks++;
+        renderDraftResultList(shuffleArray(selected), true);
+
+        if (ticks >= maxTicks) {
+            clearInterval(interval);
+            lastDraftResult = shuffleArray(selected);
+            renderDraftResultList(lastDraftResult, false);
+            if (resultTitle) resultTitle.textContent = 'ORDEM DE ESCOLHA DEFINIDA';
+            if (btnCopy) btnCopy.classList.remove('hidden');
+            if (btnStart) btnStart.disabled = false;
+            isDrawingDraft = false;
+            showToast("Sorteio realizado com sucesso!", "success");
+        }
+    }, 85);
+}
+
+function copyDraftResult() {
+    if (!lastDraftResult.length) return;
+    const lines = lastDraftResult.map((p, i) => `${i + 1}º - ${p.name}`);
+    const text = `🏆 *ORDEM DE ESCOLHA DOS TIMES - LMF* 🏆\n\n${lines.join('\n')}`;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast("Ordem copiada! Agora é só colar no grupo.", "success");
+        });
+    } else {
+        const temp = document.createElement('textarea');
+        temp.value = text;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+        showToast("Ordem copiada! Agora é só colar no grupo.", "success");
+    }
+}
+
+if (typeof renderAll === 'function') {
+    const _origRenderAll = renderAll;
+    renderAll = function() {
+        _origRenderAll.apply(this, arguments);
+        renderDraftPlayers();
+    };
+}
         /* --- UI HELPERS --- */
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
