@@ -248,7 +248,7 @@
         <button onclick="switchTab('teams'); toggleMobileMenu();" class="block w-full text-left px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider text-white hover:bg-white/5 transition-all">Clubes</button>
         <button onclick="switchTab('rules'); toggleMobileMenu();" class="block w-full text-left px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider text-white hover:bg-white/5 transition-all">Regras</button>
         <button onclick="switchTab('admin'); toggleMobileMenu();" id="mobile-tab-btn-admin" class="hidden block w-full text-left px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider text-white hover:bg-white/5 transition-all">Admin</button>
-        <button onclick="openAuthModal(); toggleMobileMenu();" class="block w-full text-left px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider text-brand-500 hover:bg-white/5 transition-all flex items-center gap-2">
+<button id="mobile-auth-btn" onclick="openAuthModal(); toggleMobileMenu();" class="block w-full text-left px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider text-brand-500 hover:bg-white/5 transition-all flex items-center gap-2">
             <i class="ph-bold ph-lock-key text-lg"></i> Login Admin
         </button>
     </div>
@@ -850,7 +850,16 @@ async function authenticateAdmin() {
             
             const adminTabBtn = document.getElementById('tab-btn-admin');
             if (adminTabBtn) adminTabBtn.classList.toggle('hidden', !isAdmin);
-            
+           
+            const mobileAdminTabBtn = document.getElementById('mobile-tab-btn-admin');
+            if (mobileAdminTabBtn) mobileAdminTabBtn.classList.toggle('hidden', !isAdmin);
+
+            const mobileAuthBtn = document.getElementById('mobile-auth-btn');
+            if (mobileAuthBtn) {
+                mobileAuthBtn.innerHTML = isAdmin
+                    ? '<i class="ph-bold ph-sign-out text-lg"></i> Sair (Admin)'
+                    : '<i class="ph-bold ph-lock-key text-lg"></i> Login Admin';
+            }
             const teamsTabBtn = document.getElementById('tab-btn-teams');
             if (teamsTabBtn) teamsTabBtn.classList.toggle('hidden', !isAdmin);
             
