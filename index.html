@@ -2,7 +2,7 @@
 <html lang="pt-BR" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">const ADMIN_EMAIL
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LMF</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -774,7 +774,7 @@ async function saveData() {
     }
 }
         /* --- AUTHENTICATION LOGIC --- */
-       const ADMIN_EMAILS = [
+       const S = [
     'natthan.christo78@gmail.com',
     'administradores@gmail.com'
 ];
@@ -806,7 +806,7 @@ async function authenticateAdmin() {
     if (!pwd) return showToast("Digite a senha.", "error");
 
     try {
-        for (const email of ADMIN_EMAILS) {
+        for (const email of S) {
             const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
                 method: 'POST',
                 headers: {
