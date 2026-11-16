@@ -498,7 +498,9 @@
                         <select id="admin-home-select" onchange="findAndRenderAdminMatch()" class="fc-input flex-1 w-full rounded-xl px-4 py-3 text-sm appearance-none cursor-pointer">
                             <option value="">Mandante (Casa)</option>
                         </select>
-                        <span class="text-slate-500 font-black text-sm">X</span>
+                        <button type="button" onclick="swapAdminMatchSides()" title="Inverter Mandante e Visitante" class="px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-brand-500/20 border border-white/10 hover:border-brand-500/40 text-slate-300 hover:text-brand-500 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shrink-0 cursor-pointer">
+                            <i class="ph-bold ph-arrows-left-right text-base"></i> Inverter
+                        </button>
                         <select id="admin-away-select" onchange="findAndRenderAdminMatch()" class="fc-input flex-1 w-full rounded-xl px-4 py-3 text-sm appearance-none cursor-pointer">
                             <option value="">Visitante (Fora)</option>
                         </select>
@@ -2218,7 +2220,19 @@ function toggleMobileMenu() {
             }
             onAdminChampChange();
         }
+        
+function swapAdminMatchSides() {
+        const homeSel = document.getElementById('admin-home-select');
+        const awaySel = document.getElementById('admin-away-select');
+        if (!homeSel || !awaySel) return;
 
+        const temp = homeSel.value;
+        homeSel.value = awaySel.value;
+        awaySel.value = temp;
+
+        findAndRenderAdminMatch();
+    }
+        
         function onAdminChampChange() {
             const champId = document.getElementById('admin-champ-select').value;
             const selectorContainer = document.getElementById('admin-match-selector-container');
