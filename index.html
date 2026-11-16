@@ -397,10 +397,43 @@
                         <h2 id="detail-champ-name" class="font-display text-4xl md:text-5xl font-black text-white uppercase tracking-tight">Nome da Liga</h2>
                     </div>
                 </div>
-                <button id="btn-del-champ" onclick="deleteCurrentChamp()" class="hidden z-10 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-500 hover:text-red-400 px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider transition-colors flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-3">
+                <button id="btn-edit-champ-teams" onclick="openEditChampTeamsModal()" class="hidden z-10 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/30 text-brand-500 hover:text-brand-400 px-4 py-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all">
+                    <i class="ph-bold ph-pencil-simple text-lg"></i> Editar Times
+                </button>
+                <button id="btn-del-champ" onclick="deleteCurrentChamp()" class="hidden z-10 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-500 hover:text-red-400 px-4 py-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all">
                     <i class="ph-bold ph-trash text-lg"></i> Excluir Torneio
                 </button>
             </div>
+        </div>
+
+        <!-- Modal Editar Times do Campeonato -->
+        <div id="modal-edit-champ-teams" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-lg p-6 md:p-8 shadow-2xl space-y-6">
+                <div class="flex items-center justify-between border-b border-white/10 pb-4">
+                    <div class="flex items-center gap-3">
+                        <i class="ph-fill ph-shield-check text-brand-500 text-2xl"></i>
+                        <h3 class="font-display text-xl font-bold uppercase tracking-wider text-white">Editar Times dos Jogadores</h3>
+                    </div>
+                    <button onclick="closeEditChampTeamsModal()" class="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+                        <i class="ph-bold ph-x text-lg"></i>
+                    </button>
+                </div>
+
+                <div id="edit-champ-teams-list" class="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+                    <!-- Lista preenchida via JS -->
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+                    <button onclick="closeEditChampTeamsModal()" class="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold text-xs uppercase tracking-wider transition-all">
+                        Cancelar
+                    </button>
+                    <button onclick="saveEditedChampTeams()" class="px-6 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-black font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all shadow-lg shadow-brand-500/20">
+                        <i class="ph-bold ph-check text-base"></i> Salvar Alterações
+                    </button>
+                </div>
+            </div>
+            
 
             <!-- Tabela (Pontos Corridos) -->
             <div id="standings-container" class="glass rounded-3xl overflow-hidden hidden border border-white/5">
@@ -882,6 +915,8 @@ async function authenticateAdmin() {
 
             const delChampBtn = document.getElementById('btn-del-champ');
             if (delChampBtn) delChampBtn.classList.toggle('hidden', !isAdmin);
+            const editChampTeamsBtn = document.getElementById('btn-edit-champ-teams');
+        if (editChampTeamsBtn) editChampTeamsBtn.classList.toggle('hidden', !isAdmin);
             
             renderAll();
         }
@@ -1481,7 +1516,77 @@ if (typeof renderAll === 'function') {
                 showToast("Torneio excluído.");
             });
         }
+function openEditChampTeamsModal() {
+        if (!isAdmin) return showToast("Acesso restrito (Somente Admin)", "error");
+        if (!currentChampId) return;
 
+        const champ = state.championships.find(c => c.id === currentChampId);
+        if (!champ) return;
+
+        const listEl = document.getElementById('edit-champ-teams-list');
+        if (!listEl) return;
+
+        const teams = Array.isArray(state.teams) ? [...state.teams].sort((a, b) => a.name.localeCompare(b.name)) : [];
+        const participantIds = (champ.teamIds || []).filter(id => id && id !== 'BYE');
+
+        listEl.innerHTML = participantIds.map(playerId => {
+            const player = getPlayerObj(playerId);
+            const currentTeamId = (champ.participants && champ.participants[playerId]) ? champ.participants[playerId] : '';
+
+            const optionsHtml = `
+                <option value="">Sem clube definido</option>
+                ${teams.map(t => `<option value="${t.id}" ${t.id === currentTeamId ? 'selected' : ''}>${escapeHTML(t.name)}</option>`).join('')}
+            `;
+
+            return `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 rounded-2xl bg-black/40 border border-white/5">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-full bg-brand-500/10 border border-brand-500/30 flex items-center justify-center font-display font-bold text-xs text-brand-500">
+                            ${escapeHTML(player.name.charAt(0).toUpperCase())}
+                        </div>
+                        <span class="font-bold text-white text-sm">${escapeHTML(player.name)}</span>
+                    </div>
+                    <select data-player-id="${playerId}" class="edit-champ-team-select bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500 sm:w-52">
+                        ${optionsHtml}
+                    </select>
+                </div>
+            `;
+        }).join('');
+
+        document.getElementById('modal-edit-champ-teams').classList.remove('hidden');
+    }
+
+    function closeEditChampTeamsModal() {
+        const modal = document.getElementById('modal-edit-champ-teams');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    function saveEditedChampTeams() {
+        if (!isAdmin) return showToast("Acesso restrito (Somente Admin)", "error");
+        if (!currentChampId) return;
+
+        const champ = state.championships.find(c => c.id === currentChampId);
+        if (!champ) return;
+
+        if (!champ.participants) champ.participants = {};
+
+        const selects = document.querySelectorAll('.edit-champ-team-select');
+        selects.forEach(sel => {
+            const playerId = sel.getAttribute('data-player-id');
+            const newTeamId = sel.value;
+            if (newTeamId) {
+                champ.participants[playerId] = newTeamId;
+            } else {
+                delete champ.participants[playerId];
+            }
+        });
+
+        saveData();
+        renderAll();
+        closeEditChampTeamsModal();
+        showToast("Times atualizados com sucesso!");
+    }
+        
         function saveScore(champId, matchId) {
             if (!isAdmin) return showToast("Acesso restrito (Somente Admin)", "error");
             
