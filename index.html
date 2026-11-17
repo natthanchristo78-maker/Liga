@@ -113,19 +113,19 @@
             background: linear-gradient(to right, rgba(10,10,12,0.95) 0%, rgba(10,10,12,0.6) 50%, rgba(10,10,12,0.95) 100%),
                         url('https://images.unsplash.com/photo-1522778119026-d647f0596c20?q=80&w=2070&auto=format&fit=crop');
             background-size: cover;
-            background-ition: center;
+            background-position: center;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            ition: relative;
+            position: relative;
             overflow: hidden;
         }
         .hero-banner::before {
             content: '';
-            ition: absolute;
+            position: absolute;
             top: -50%; left: -50%; width: 200%; height: 200%;
             background: radial-gradient(circle at center, rgba(200,255,0,0.15) 0%, transparent 50%);
             animation: pulse-glow 8s infinite alternate;
+            pointer-events: none;
         }
-
         /* Animations */
         @keyframes pulse-glow {
             0% { transform: scale(1); opacity: 0.5; }
