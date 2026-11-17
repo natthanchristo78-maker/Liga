@@ -398,6 +398,9 @@
                 </div>
             </div>
                 <div class="flex flex-wrap items-center gap-3">
+                    <button id="btn-generate-top8-cup" onclick="generateTop8CupFromLeague()" class="hidden z-10 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-400 hover:text-amber-300 px-4 py-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer">
+                    <i class="ph-bold ph-trophy text-lg"></i> Gerar Copa Top 8
+                </button>
                 <button id="btn-open-champ-scores" onclick="openChampScoresModal()" class="hidden z-10 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 px-4 py-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all">
                     <i class="ph-bold ph-soccer-ball text-lg"></i> Lançar Placares
                 </button><button id="btn-edit-champ-teams" onclick="openEditChampTeamsModal()" class="hidden z-10 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/30 text-brand-500 hover:text-brand-400 px-4 py-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all">
@@ -1556,7 +1559,145 @@ if (typeof renderAll === 'function') {
             closeModal('modal-create-champ');
             showToast("Torneio criado com sucesso!");
         }
+function generateTop8CupFromLeague() {
+        if (!isAdmin || !currentChampId) return;
+        const league = state.championships.find(c => c.id === currentChampId);
+        if (!league || league.format !== 'league') return;
 
+        const validMatches = (league.matches || []).filter(m => m.home !== 'BYE' && m.away !== 'BYE');
+        if (validMatches.length === 0 || !validMatches.every(m => m.played)) {
+            return showToast("Finalize todos os jogos da liga antes de gerar a Copa Top 8.", "error");
+        }
+
+        if ((league.teamIds || []).length < 8) {
+            return showToast("A liga precisa ter pelo menos 8 participantes.", "error");
+        }
+
+        // 1. Calcula a classificação final da liga com os mesmos critérios da tabela
+        const table = {};
+        league.teamIds.forEach(id => {
+            table[id] = { id, p: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, sg: 0 };
+        });
+
+        validMatches.forEach(m => {
+            if (!table[m.home] || !table[m.away]) return;
+            table[m.home].j++;
+            table[m.away].j++;
+            table[m.home].gp += m.homeGoals;
+            table[m.home].gc += m.awayGoals;
+            table[m.away].gp += m.awayGoals;
+            table[m.away].gc += m.homeGoals;
+
+            if (m.homeGoals > m.awayGoals) {
+                table[m.home].v++; table[m.home].p += 3; table[m.away].d++;
+            } else if (m.homeGoals < m.awayGoals) {
+                table[m.away].v++; table[m.away].p += 3; table[m.home].d++;
+            } else {
+                table[m.home].e++; table[m.away].e++; table[m.home].p++; table[m.away].p++;
+            }
+        });
+
+        Object.values(table).forEach(t => t.sg = t.gp - t.gc);
+
+        const sorted = Object.values(table).sort((a, b) => {
+            if (b.p !== a.p) return b.p - a.p;
+            if (b.v !== a.v) return b.v - a.v;
+            if (b.sg !== a.sg) return b.sg - a.sg;
+            return b.gp - a.gp;
+        });
+
+        // 2. Pega os 8 primeiros colocados (1º ao 8º)
+        const top8 = sorted.slice(0, 8).map(row => row.id);
+        const top8Participants = {};
+        top8.forEach(id => {
+            top8Participants[id] = getParticipantObj(league, id);
+        });
+
+        const cupName = `Copa Top 8 — ${league.name}`;
+        const alreadyExists = state.championships.some(c => c.name === cupName);
+        if (alreadyExists && !confirm(`Já existe um torneio "${cupName}". Deseja gerar outro mesmo assim?`)) {
+            return;
+        }
+
+        const twoway = confirm(
+            `Classificados para a ${cupName}:\n` +
+            top8.map((id, idx) => `${idx + 1}º ${top8Participants[id].playerName} (${top8Participants[id].teamName || 'Sem clube'})`).join('\n') +
+            `\n\nClique em OK para MATA-MATA IDA E VOLTA ou CANCELAR para JOGO ÚNICO.`
+        );
+
+        // 3. Monta os cruzamentos olímpicos das Quartas -> Semis -> Final
+        // Chave Superior: 1º x 8º (matchNum 0) e 4º x 5º (matchNum 1) -> Semi 1
+        // Chave Inferior: 2º x 7º (matchNum 2) e 3º x 6º (matchNum 3) -> Semi 2
+        const qfPairs = [
+            { nodeId: 'r1_m0', nextId: 'r2_m0', matchNum: 0, roundNum: 1, home: top8[0], away: top8[7] },
+            { nodeId: 'r1_m1', nextId: 'r2_m0', matchNum: 1, roundNum: 1, home: top8[3], away: top8[4] },
+            { nodeId: 'r1_m2', nextId: 'r2_m1', matchNum: 2, roundNum: 1, home: top8[1], away: top8[6] },
+            { nodeId: 'r1_m3', nextId: 'r2_m1', matchNum: 3, roundNum: 1, home: top8[2], away: top8[5] }
+        ];
+
+        const sfPairs = [
+            { nodeId: 'r2_m0', nextId: 'r3_m0', matchNum: 0, roundNum: 2, home: null, away: null },
+            { nodeId: 'r2_m1', nextId: 'r3_m0', matchNum: 1, roundNum: 2, home: null, away: null }
+        ];
+
+        const finalPair = [
+            { nodeId: 'r3_m0', nextId: null, matchNum: 0, roundNum: 3, home: null, away: null }
+        ];
+
+        const allNodes = [...qfPairs, ...sfPairs, ...finalPair];
+        const koMatches = [];
+
+        allNodes.forEach(node => {
+            koMatches.push({
+                id: Date.now().toString() + Math.random().toString(36).substring(2, 7),
+                nodeId: node.nodeId,
+                nextId: node.nextId,
+                matchNum: node.matchNum,
+                roundNum: node.roundNum,
+                home: node.home,
+                away: node.away,
+                homeGoals: null,
+                awayGoals: null,
+                played: false,
+                isReturn: false,
+                isKnockout: true
+            });
+
+            if (twoway) {
+                koMatches.push({
+                    id: Date.now().toString() + Math.random().toString(36).substring(2, 7),
+                    nodeId: node.nodeId,
+                    nextId: node.nextId,
+                    matchNum: node.matchNum,
+                    roundNum: node.roundNum,
+                    home: node.away,
+                    away: node.home,
+                    homeGoals: null,
+                    awayGoals: null,
+                    played: false,
+                    isReturn: true,
+                    isKnockout: true
+                });
+            }
+        });
+
+        const newCup = {
+            id: Date.now().toString(),
+            name: cupName,
+            format: 'knockout',
+            twoway: twoway,
+            deadline: league.deadline || '',
+            teamIds: top8,
+            participants: top8Participants,
+            matches: koMatches
+        };
+
+        state.championships.push(newCup);
+        saveData();
+        showToast(`${cupName} gerada com sucesso!`);
+        openChampDetails(newCup.id);
+    }
+        
         /* --- CHAMPIONSHIP MANAGEMENT --- */
         let champSubTab = 'main';
 
@@ -2358,6 +2499,21 @@ function switchChampSubTab(tab) {
 
                 populateChampSummaryFilter(champ);
         applyChampSubTabState(champ);
+
+                const btnTop8 = document.getElementById('btn-generate-top8-cup');
+        if (btnTop8) {
+            const validLeagueMatches = (champ.matches || []).filter(m => m.home !== 'BYE' && m.away !== 'BYE');
+            const isLeagueFinished = champ.format === 'league'
+                && (champ.teamIds || []).length >= 8
+                && validLeagueMatches.length > 0
+                && validLeagueMatches.every(m => m.played);
+
+            if (isAdmin && isLeagueFinished) {
+                btnTop8.classList.remove('hidden');
+            } else {
+                btnTop8.classList.add('hidden');
+            }
+        }
                 
                 if (champ.format === 'league') {
                     standingsCont.classList.remove('hidden');
