@@ -455,6 +455,36 @@
                 </div>
             </div>
         </div>
+
+            <!-- Sub-abas de Navegação do Campeonato -->
+        <div class="flex flex-wrap items-center gap-2 mb-6 border-b border-white/10 pb-4">
+            <button type="button" id="champ-subtab-btn-main" onclick="switchChampSubTab('main')" class="px-5 py-2.5 rounded-xl bg-brand-500 text-black font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer">
+                <i class="ph-bold ph-trophy text-base"></i> Classificação / Chave
+            </button>
+            <button type="button" id="champ-subtab-btn-summary" onclick="switchChampSubTab('summary')" class="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer">
+                <i class="ph-bold ph-list-checks text-base"></i> Resumo & Jogos por Time
+            </button>
+        </div>
+
+        <!-- Painel: Resumo dos Times e Jogos Pendentes/Realizados -->
+        <div id="champ-summary-container" class="hidden space-y-6">
+            <div class="glass rounded-3xl p-6 border border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <i class="ph-fill ph-funnel text-brand-500 text-2xl"></i>
+                    <div>
+                        <h3 class="font-display text-lg font-bold uppercase tracking-wider text-white">Filtrar por Time / Jogador</h3>
+                        <p class="text-xs text-slate-400">Escolha um participante para ver o resumo e os jogos realizados ou pendentes</p>
+                    </div>
+                </div>
+                <select id="champ-summary-filter" onchange="renderChampSummary()" class="fc-input w-full md:w-80 rounded-xl px-4 py-3 text-sm font-medium appearance-none cursor-pointer">
+                    <option value="">Todos os Times (Resumo Geral)</option>
+                </select>
+            </div>
+
+            <div id="champ-summary-body" class="space-y-6">
+                <!-- Conteúdo gerado via JS -->
+            </div>
+        </div>
             
             <!-- Tabela (Pontos Corridos) -->
             <div id="standings-container" class="glass rounded-3xl overflow-hidden hidden border border-white/5">
@@ -1525,11 +1555,16 @@ if (typeof renderAll === 'function') {
         }
 
         /* --- CHAMPIONSHIP MANAGEMENT --- */
-        function openChampDetails(id) {
-            currentChampId = id;
-            switchTab('champ-details');
-        }
+        let champSubTab = 'main';
 
+    function openChampDetails(id) {
+        currentChampId = id;
+        champSubTab = 'main';
+        const filterEl = document.getElementById('champ-summary-filter');
+        if (filterEl) filterEl.value = '';
+        switchTab('champ-details');
+    }
+        
         function deleteCurrentChamp() {
             if (!isAdmin) return showToast("Acesso restrito (Somente Admin)", "error");
             if (!currentChampId) return;
@@ -1651,6 +1686,286 @@ function openEditChampTeamsModal() {
         }
 
         if (modal) modal.classList.add('hidden');
+    }
+        
+function switchChampSubTab(tab) {
+        champSubTab = tab;
+        const champ = state.championships.find(c => c.id === currentChampId);
+        if (champ) applyChampSubTabState(champ);
+    }
+
+    function applyChampSubTabState(champ) {
+        const btnMain = document.getElementById('champ-subtab-btn-main');
+        const btnSummary = document.getElementById('champ-subtab-btn-summary');
+        const standingsCont = document.getElementById('standings-container');
+        const bracketCont = document.getElementById('bracket-container');
+        const statsCont = document.getElementById('stats-container');
+        const summaryCont = document.getElementById('champ-summary-container');
+
+        if (!btnMain || !btnSummary || !summaryCont) return;
+
+        if (champSubTab === 'summary') {
+            btnSummary.className = "px-5 py-2.5 rounded-xl bg-brand-500 text-black font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer";
+            btnMain.className = "px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer";
+
+            if (standingsCont) standingsCont.classList.add('hidden');
+            if (bracketCont) bracketCont.classList.add('hidden');
+            if (statsCont) statsCont.classList.add('hidden');
+            summaryCont.classList.remove('hidden');
+
+            renderChampSummary();
+        } else {
+            btnMain.className = "px-5 py-2.5 rounded-xl bg-brand-500 text-black font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer";
+            btnSummary.className = "px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer";
+
+            summaryCont.classList.add('hidden');
+            if (statsCont) statsCont.classList.remove('hidden');
+            if (champ.format === 'league') {
+                if (standingsCont) standingsCont.classList.remove('hidden');
+                if (bracketCont) bracketCont.classList.add('hidden');
+            } else {
+                if (standingsCont) standingsCont.classList.add('hidden');
+                if (bracketCont) bracketCont.classList.remove('hidden');
+            }
+        }
+    }
+
+    function populateChampSummaryFilter(champ) {
+        const filterEl = document.getElementById('champ-summary-filter');
+        if (!filterEl) return;
+
+        const currentVal = filterEl.value;
+        const participantIds = (champ.teamIds || []).filter(id => id && id !== 'BYE');
+
+        let optionsHtml = '<option value="">Todos os Times (Resumo Geral)</option>';
+        participantIds.forEach(id => {
+            const p = getParticipantObj(champ, id);
+            const label = p.teamName ? `${p.teamName} (${p.playerName})` : p.playerName;
+            optionsHtml += `<option value="${id}">${escapeHTML(label)}</option>`;
+        });
+
+        filterEl.innerHTML = optionsHtml;
+        if (participantIds.includes(currentVal)) {
+            filterEl.value = currentVal;
+        }
+    }
+
+    function renderChampSummary() {
+        const bodyEl = document.getElementById('champ-summary-body');
+        const filterEl = document.getElementById('champ-summary-filter');
+        if (!bodyEl || !currentChampId) return;
+
+        const champ = state.championships.find(c => c.id === currentChampId);
+        if (!champ) return;
+
+        const selectedId = filterEl ? filterEl.value : '';
+        const participantIds = (champ.teamIds || []).filter(id => id && id !== 'BYE');
+
+        // Calcula estatísticas de todos os times sem alterar a ordem original
+        const statsMap = {};
+        participantIds.forEach(id => {
+            statsMap[id] = { id, p: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0 };
+        });
+
+        (champ.matches || []).forEach(m => {
+            if (m.played && m.home !== 'BYE' && m.away !== 'BYE') {
+                if (statsMap[m.home]) {
+                    statsMap[m.home].j++;
+                    statsMap[m.home].gp += Number(m.homeGoals || 0);
+                    statsMap[m.home].gc += Number(m.awayGoals || 0);
+                }
+                if (statsMap[m.away]) {
+                    statsMap[m.away].j++;
+                    statsMap[m.away].gp += Number(m.awayGoals || 0);
+                    statsMap[m.away].gc += Number(m.homeGoals || 0);
+                }
+
+                if (m.homeGoals > m.awayGoals) {
+                    if (statsMap[m.home]) { statsMap[m.home].v++; statsMap[m.home].p += 3; }
+                    if (statsMap[m.away]) { statsMap[m.away].d++; }
+                } else if (m.homeGoals < m.awayGoals) {
+                    if (statsMap[m.away]) { statsMap[m.away].v++; statsMap[m.away].p += 3; }
+                    if (statsMap[m.home]) { statsMap[m.home].d++; }
+                } else {
+                    if (statsMap[m.home]) { statsMap[m.home].e++; statsMap[m.home].p += 1; }
+                    if (statsMap[m.away]) { statsMap[m.away].e++; statsMap[m.away].p += 1; }
+                }
+            }
+        });
+
+        // Caso 1: Nenhum time filtrado -> Mostra a relação de resumo rápido de todos os times
+        if (!selectedId) {
+            const cardsHtml = participantIds.map(id => {
+                const st = statsMap[id];
+                const sg = st.gp - st.gc;
+                const sgFormatted = sg > 0 ? `+${sg}` : `${sg}`;
+                const sgColor = sg > 0 ? 'text-emerald-400' : (sg < 0 ? 'text-red-400' : 'text-slate-300');
+                const p = getParticipantObj(champ, id);
+
+                const teamMatches = (champ.matches || []).filter(m => (m.home === id || m.away === id) && m.home !== 'BYE' && m.away !== 'BYE');
+                const playedCount = teamMatches.filter(m => m.played).length;
+                const pendingCount = teamMatches.filter(m => !m.played).length;
+
+                return `
+                    <div onclick="document.getElementById('champ-summary-filter').value='${id}'; renderChampSummary();" class="glass rounded-2xl p-5 border border-white/5 hover:border-brand-500/40 transition-all cursor-pointer space-y-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-3 min-w-0">
+                                ${p.logo ? `<img src="${escapeHTML(p.logo)}" class="w-10 h-10 object-contain shrink-0">` : `<div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center shrink-0"><i class="ph-fill ph-shield text-slate-400"></i></div>`}
+                                <div class="min-w-0">
+                                    <div class="font-bold text-white truncate">${escapeHTML(p.teamName || 'Sem Clube')}</div>
+                                    <div class="text-xs text-slate-400 truncate">${escapeHTML(p.playerName)}</div>
+                                </div>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-lg bg-brand-500/10 text-brand-500 font-black text-xs shrink-0">${st.p} PTS</span>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-2 bg-black/30 rounded-xl p-3 text-center border border-white/5">
+                            <div>
+                                <div class="text-[10px] uppercase text-slate-500 font-bold">Jogos</div>
+                                <div class="text-sm font-black text-white">${st.j}</div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] uppercase text-slate-500 font-bold">GP</div>
+                                <div class="text-sm font-black text-white">${st.gp}</div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] uppercase text-slate-500 font-bold">GC</div>
+                                <div class="text-sm font-black text-white">${st.gc}</div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] uppercase text-slate-500 font-bold">SG</div>
+                                <div class="text-sm font-black ${sgColor}">${sgFormatted}</div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-[11px] font-bold pt-1 border-t border-white/5">
+                            <span class="text-emerald-400"><i class="ph-bold ph-check-circle"></i> ${playedCount} realizadas</span>
+                            <span class="text-amber-400"><i class="ph-bold ph-clock"></i> ${pendingCount} pendentes</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            bodyEl.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    ${cardsHtml}
+                </div>
+            `;
+            return;
+        }
+
+        // Caso 2: Um time específico foi selecionado -> Mostra o resumo dele + Partidas Realizadas + Partidas Pendentes
+        const st = statsMap[selectedId];
+        const sg = st.gp - st.gc;
+        const sgFormatted = sg > 0 ? `+${sg}` : `${sg}`;
+        const sgColor = sg > 0 ? 'text-emerald-400' : (sg < 0 ? 'text-red-400' : 'text-slate-300');
+        const pSelected = getParticipantObj(champ, selectedId);
+
+        const teamMatches = (champ.matches || []).filter(m => (m.home === selectedId || m.away === selectedId) && m.home !== 'BYE' && m.away !== 'BYE');
+        const playedMatches = teamMatches.filter(m => m.played);
+        const pendingMatches = teamMatches.filter(m => !m.played);
+
+        const renderMatchRow = (m, isPlayed) => {
+            const hObj = getParticipantObj(champ, m.home);
+            const aObj = getParticipantObj(champ, m.away);
+            const roundTag = m.round ? `<span class="text-[10px] uppercase font-bold text-slate-500 mr-2">Rodada ${m.round}</span>` : '';
+            const scoreBadge = isPlayed
+                ? `<span class="px-3 py-1 rounded-lg bg-brand-500/15 border border-brand-500/30 text-brand-500 font-display font-black text-sm shrink-0">${m.homeGoals} x ${m.awayGoals}</span>`
+                : `<span class="px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold text-[11px] uppercase tracking-wider shrink-0">Pendente</span>`;
+
+            return `
+                <div class="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-black/30 border border-white/5">
+                    <div class="flex items-center gap-2 min-w-0 flex-1 justify-end text-right">
+                        <div class="min-w-0">
+                            <div class="text-xs font-bold text-white truncate">${escapeHTML(hObj.teamName || hObj.playerName)}</div>
+                            <div class="text-[10px] text-slate-400 truncate">${escapeHTML(hObj.playerName)}</div>
+                        </div>
+                        ${hObj.logo ? `<img src="${escapeHTML(hObj.logo)}" class="w-7 h-7 object-contain shrink-0">` : ''}
+                    </div>
+
+                    <div class="flex flex-col items-center shrink-0">
+                        ${roundTag}
+                        ${scoreBadge}
+                    </div>
+
+                    <div class="flex items-center gap-2 min-w-0 flex-1">
+                        ${aObj.logo ? `<img src="${escapeHTML(aObj.logo)}" class="w-7 h-7 object-contain shrink-0">` : ''}
+                        <div class="min-w-0">
+                            <div class="text-xs font-bold text-white truncate">${escapeHTML(aObj.teamName || aObj.playerName)}</div>
+                            <div class="text-[10px] text-slate-400 truncate">${escapeHTML(aObj.playerName)}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        bodyEl.innerHTML = `
+            <div class="glass rounded-3xl p-6 border border-brand-500/30 space-y-5">
+                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
+                    <div class="flex items-center gap-4">
+                        ${pSelected.logo ? `<img src="${escapeHTML(pSelected.logo)}" class="w-14 h-14 object-contain">` : ''}
+                        <div>
+                            <h4 class="font-display text-2xl font-bold text-white uppercase tracking-wide">${escapeHTML(pSelected.teamName || 'Sem Clube')}</h4>
+                            <p class="text-sm text-slate-400">Jogador: <span class="text-white font-semibold">${escapeHTML(pSelected.playerName)}</span></p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="document.getElementById('champ-summary-filter').value=''; renderChampSummary();" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-slate-300 uppercase tracking-wider transition-all cursor-pointer">
+                        Ver Todos os Times
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+                    <div class="bg-black/40 rounded-2xl p-3 border border-white/5">
+                        <div class="text-[10px] uppercase font-bold text-brand-500">Pontos</div>
+                        <div class="text-2xl font-display font-black text-white">${st.p}</div>
+                    </div>
+                    <div class="bg-black/40 rounded-2xl p-3 border border-white/5">
+                        <div class="text-[10px] uppercase font-bold text-slate-400">Jogos</div>
+                        <div class="text-2xl font-display font-black text-white">${st.j}</div>
+                    </div>
+                    <div class="bg-black/40 rounded-2xl p-3 border border-white/5">
+                        <div class="text-[10px] uppercase font-bold text-slate-400">Gols Pró (GP)</div>
+                        <div class="text-2xl font-display font-black text-white">${st.gp}</div>
+                    </div>
+                    <div class="bg-black/40 rounded-2xl p-3 border border-white/5">
+                        <div class="text-[10px] uppercase font-bold text-slate-400">Gols Contra (GC)</div>
+                        <div class="text-2xl font-display font-black text-white">${st.gc}</div>
+                    </div>
+                    <div class="bg-black/40 rounded-2xl p-3 border border-white/5 col-span-2 sm:col-span-1">
+                        <div class="text-[10px] uppercase font-bold text-slate-400">Saldo (SG)</div>
+                        <div class="text-2xl font-display font-black ${sgColor}">${sgFormatted}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="glass rounded-3xl p-6 border border-white/5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                        <h4 class="font-display text-lg font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                            <i class="ph-fill ph-clock"></i> Partidas Pendentes (${pendingMatches.length})
+                        </h4>
+                    </div>
+                    <div class="space-y-3">
+                        ${pendingMatches.length > 0
+                            ? pendingMatches.map(m => renderMatchRow(m, false)).join('')
+                            : '<p class="text-sm text-slate-400 py-4 text-center">Nenhuma partida pendente para este time.</p>'}
+                    </div>
+                </div>
+
+                <div class="glass rounded-3xl p-6 border border-white/5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                        <h4 class="font-display text-lg font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                            <i class="ph-fill ph-check-circle"></i> Partidas Realizadas (${playedMatches.length})
+                        </h4>
+                    </div>
+                    <div class="space-y-3">
+                        ${playedMatches.length > 0
+                            ? playedMatches.map(m => renderMatchRow(m, true)).join('')
+                            : '<p class="text-sm text-slate-400 py-4 text-center">Nenhuma partida lançada ainda para este time.</p>'}
+                    </div>
+                </div>
+            </div>
+        `;
     }
         
         function saveScore(champId, matchId) {
@@ -1971,6 +2286,9 @@ function openEditChampTeamsModal() {
                 const standingsCont = document.getElementById('standings-container');
                 const bracketCont = document.getElementById('bracket-container');
 
+                populateChampSummaryFilter(champ);
+        applyChampSubTabState(champ);
+                
                 if (champ.format === 'league') {
                     standingsCont.classList.remove('hidden');
                     bracketCont.classList.add('hidden');
