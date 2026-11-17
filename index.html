@@ -516,8 +516,16 @@
                             <!-- Rows rendered here -->
                         </tbody>
                     </table>
-                </div>
-            </div>
+                <div class="px-6 py-3 bg-black/30 border-t border-white/5 flex flex-wrap items-center gap-6 text-xs text-slate-400">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                                        <span>Classificação Copa Top 8 (1º ao 8º)</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                                        <span>Zona de Rebaixamento (2 últimos)</span>
+                                    </div>
+                                </div>
 
             <!-- Chaveamento (Mata-Mata) -->
             <div id="bracket-container" class="glass rounded-3xl overflow-hidden hidden border border-white/5 p-6 overflow-x-auto">
@@ -2538,10 +2546,27 @@ function switchChampSubTab(tab) {
                     Object.values(table).forEach(t => t.sg = t.gp - t.gc);
                     let sorted = Object.values(table).sort((a,b) => b.p - a.p || b.sg - a.sg || b.gp - a.gp);
 
-                   document.getElementById('standings-body').innerHTML = sorted.map((row, idx) => {
+                  document.getElementById('standings-body').innerHTML = sorted.map((row, idx) => {
                         let p = getParticipantObj(champ, row.id);
-                        const isTop = idx === 0;
-                        const rowClass = isTop ? 'bg-brand-500/5' : 'hover:bg-white/[0.02]';
+                        const totalTeams = sorted.length;
+                        const isLeader = idx === 0;
+                        const isTop8 = totalTeams >= 8 && idx < 8;
+                        const isRelegation = totalTeams >= 10 && idx >= totalTeams - 2;
+
+                        let rowClass = 'hover:bg-white/[0.02] border-l-4 border-l-transparent';
+                        let posClass = 'text-slate-500';
+
+                        if (isLeader) {
+                            rowClass = 'bg-brand-500/5 hover:bg-brand-500/10 border-l-4 border-l-brand-500';
+                            posClass = 'text-brand-500 text-lg';
+                        } else if (isTop8) {
+                            rowClass = 'bg-blue-500/[0.04] hover:bg-blue-500/[0.08] border-l-4 border-l-blue-500';
+                            posClass = 'text-blue-400';
+                        } else if (isRelegation) {
+                            rowClass = 'bg-red-500/[0.04] hover:bg-red-500/[0.08] border-l-4 border-l-red-500';
+                            posClass = 'text-red-400';
+                        }
+
                         const aprov = row.j > 0 ? Math.round((row.p / (row.j * 3)) * 100) : 0;
 
                         const avatar = p.logo
@@ -2550,7 +2575,7 @@ function switchChampSubTab(tab) {
 
                         return `
                             <tr class="${rowClass} transition-colors border-b border-white/5 last:border-0 font-medium">
-                                <td class="px-4 py-4 text-center font-display font-bold ${isTop ? 'text-brand-500 text-lg' : 'text-slate-500'}">${idx+1}º</td>
+                                <td class="px-4 py-4 text-center font-display font-bold ${posClass}">${idx+1}º</td>
                                 <td class="px-4 py-4">
                                     <div class="flex items-center gap-3">
                                         <div class="w-8 h-8 rounded-full bg-black/50 overflow-hidden flex items-center justify-center border border-white/10 shrink-0 shadow-inner">
