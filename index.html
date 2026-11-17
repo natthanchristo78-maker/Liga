@@ -1854,7 +1854,7 @@ function switchChampSubTab(tab) {
             return;
         }
 
-        // Caso 2: Um time específico foi selecionado -> Mostra o resumo dele + Partidas Realizadas + Partidas Pendentes
+        // Caso 2: Um time específico foi selecionado -> Mostra o resumo dele + Partidas Realizadas + 
         const st = statsMap[selectedId];
         const sg = st.gp - st.gc;
         const sgFormatted = sg > 0 ? `+${sg}` : `${sg}`;
@@ -1939,11 +1939,15 @@ function switchChampSubTab(tab) {
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="glass rounded-3xl p-6 border border-white/5 space-y-4">
-                    <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
                         <h4 class="font-display text-lg font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
                             <i class="ph-fill ph-clock"></i> Partidas Pendentes (${pendingMatches.length})
                         </h4>
+                        ${pendingMatches.length > 0 ? `
+                            <button type="button" onclick="copyPendingMatchesToWhatsApp('${selectedId}')" class="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer">
+                                <i class="ph-bold ph-whatsapp-logo text-sm"></i> Copiar p/ WhatsApp
+                            </button>
+                        ` : ''}
                     </div>
                     <div class="space-y-3">
                         ${pendingMatches.length > 0
@@ -1966,6 +1970,66 @@ function switchChampSubTab(tab) {
                 </div>
             </div>
         `;
+    }
+
+    function copyPendingMatchesToWhatsApp(selectedId) {
+        if (!currentChampId || !selectedId) return;
+        const champ = state.championships.find(c => c.id === currentChampId);
+        if (!champ) return;
+
+        const pSelected = getParticipantObj(champ, selectedId);
+        const pendingMatches = (champ.matches || []).filter(m =>
+            !m.played &&
+            (m.home === selectedId || m.away === selectedId) &&
+            m.home !== 'BYE' &&
+            m.away !== 'BYE'
+        );
+
+        if (pendingMatches.length === 0) {
+            return showToast("Nenhuma partida pendente para copiar.", "error");
+        }
+
+        // Agrupa por adversário para contar quantos jogos faltam contra cada jogador/time
+        const opponentsMap = {};
+        pendingMatches.forEach(m => {
+            const oppId = m.home === selectedId ? m.away : m.home;
+            if (!opponentsMap[oppId]) {
+                const oppObj = getParticipantObj(champ, oppId);
+                opponentsMap[oppId] = {
+                    playerName: oppObj.playerName || 'Jogador',
+                    teamName: oppObj.teamName || '',
+                    count: 0
+                };
+            }
+            opponentsMap[oppId].count++;
+        });
+
+        const myHeader = pSelected.teamName
+            ? `*${pSelected.playerName}* (${pSelected.teamName})`
+            : `*${pSelected.playerName}*`;
+
+        const lines = Object.values(opponentsMap).map(opp => {
+            const oppLabel = opp.teamName
+                ? `*${opp.playerName}* (${opp.teamName})`
+                : `*${opp.playerName}*`;
+            const jogosLabel = opp.count === 1 ? '1 jogo' : `${opp.count} jogos`;
+            return `• ${oppLabel} — ${jogosLabel}`;
+        });
+
+        const message = [
+            `⚽ *JOGOS PENDENTES — ${champ.name.toUpperCase()}*`,
+            `👤 Jogador: ${myHeader}`,
+            ``,
+            ...lines,
+            ``,
+            `Total: ${pendingMatches.length} ${pendingMatches.length === 1 ? 'partida pendente' : 'partidas pendentes'}. Bora jogar! 🎮`
+        ].join('\n');
+
+        navigator.clipboard.writeText(message).then(() => {
+            showToast("Lista copiada! Cole no grupo do WhatsApp.");
+        }).catch(() => {
+            showToast("Não foi possível copiar automaticamente.", "error");
+        });
     }
         
         function saveScore(champId, matchId) {
