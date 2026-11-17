@@ -113,14 +113,14 @@
             background: linear-gradient(to right, rgba(10,10,12,0.95) 0%, rgba(10,10,12,0.6) 50%, rgba(10,10,12,0.95) 100%),
                         url('https://images.unsplash.com/photo-1522778119026-d647f0596c20?q=80&w=2070&auto=format&fit=crop');
             background-size: cover;
-            background-position: center;
+            background-ition: center;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            position: relative;
+            ition: relative;
             overflow: hidden;
         }
         .hero-banner::before {
             content: '';
-            position: absolute;
+            ition: absolute;
             top: -50%; left: -50%; width: 200%; height: 200%;
             background: radial-gradient(circle at center, rgba(200,255,0,0.15) 0%, transparent 50%);
             animation: pulse-glow 8s infinite alternate;
@@ -496,14 +496,17 @@
                     <table class="w-full text-left text-sm whitespace-nowrap">
                         <thead class="bg-black/40 text-slate-400 text-[10px] uppercase font-bold tracking-widest">
                             <tr>
-                                <th class="px-6 py-4 text-center w-16">Pos</th>
-                                <th class="px-6 py-4">Clube/Jogador</th>
-                                <th class="px-6 py-4 text-center text-brand-500">PTS</th>
-                                <th class="px-6 py-4 text-center">J</th>
-                                <th class="px-6 py-4 text-center">V</th>
-                                <th class="px-6 py-4 text-center">E</th>
-                                <th class="px-6 py-4 text-center">D</th>
-                                <th class="px-6 py-4 text-center">SG</th>
+                                <th class="px-4 py-4 text-center w-14">Pos</th>
+                                    <th class="px-4 py-4">Clube/Jogador</th>
+                                    <th class="px-4 py-4 text-center text-brand-500">PTS</th>
+                                    <th class="px-4 py-4 text-center">J</th>
+                                    <th class="px-4 py-4 text-center">V</th>
+                                    <th class="px-4 py-4 text-center">E</th>
+                                    <th class="px-4 py-4 text-center">D</th>
+                                    <th class="px-4 py-4 text-center">GM</th>
+                                    <th class="px-4 py-4 text-center">GS</th>
+                                    <th class="px-4 py-4 text-center">SG</th>
+                                    <th class="px-4 py-4 text-center">%</th>
                             </tr>
                         </thead>
                         <tbody id="standings-body" class="divide-y divide-white/5">
@@ -2379,35 +2382,39 @@ function switchChampSubTab(tab) {
                     Object.values(table).forEach(t => t.sg = t.gp - t.gc);
                     let sorted = Object.values(table).sort((a,b) => b.p - a.p || b.sg - a.sg || b.gp - a.gp);
 
-                    document.getElementById('standings-body').innerHTML = sorted.map((row, idx) => {
+                   document.getElementById('standings-body').innerHTML = sorted.map((row, idx) => {
                         let p = getParticipantObj(champ, row.id);
                         const isTop = idx === 0;
                         const rowClass = isTop ? 'bg-brand-500/5' : 'hover:bg-white/[0.02]';
-                        
-                        const avatar = p.logo 
-                            ? `<img src="${escapeHTML(p.logo)}" class="w-full h-full object-contain p-1">` 
+                        const aprov = row.j > 0 ? Math.round((row.p / (row.j * 3)) * 100) : 0;
+
+                        const avatar = p.logo
+                            ? `<img src="${escapeHTML(p.logo)}" class="w-full h-full object-contain p-1">`
                             : `<div class="w-full h-full flex items-center justify-center font-display text-sm text-white/20">${p.playerName.charAt(0).toUpperCase()}</div>`;
 
                         return `
                             <tr class="${rowClass} transition-colors border-b border-white/5 last:border-0 font-medium">
-                                <td class="px-6 py-4 text-center font-display font-bold ${isTop ? 'text-brand-500 text-lg' : 'text-slate-500'}">${idx+1}º</td>
-                                <td class="px-6 py-4">
+                                <td class="px-4 py-4 text-center font-display font-bold ${isTop ? 'text-brand-500 text-lg' : 'text-slate-500'}">${idx+1}º</td>
+                                <td class="px-4 py-4">
                                     <div class="flex items-center gap-3">
                                         <div class="w-8 h-8 rounded-full bg-black/50 overflow-hidden flex items-center justify-center border border-white/10 shrink-0 shadow-inner">
                                             ${avatar}
                                         </div>
                                         <div class="flex flex-col">
                                             <span class="text-white font-bold tracking-wide leading-tight">${escapeHTML(p.playerName)}</span>
-                                            ${p.teamName ? `<span class="text-[9px] text-brand-500 font-bold uppercase truncate max-w-[150px]">${escapeHTML(p.teamName)}</span>` : ''}
+                                            ${p.teamName ? `<span class="text-[10px] text-brand-500 font-bold uppercase truncate max-w-[150px]">${escapeHTML(p.teamName)}</span>` : ''}
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 text-center text-brand-500 font-black text-lg">${row.p}</td>
-                                <td class="px-6 py-4 text-center text-slate-300">${row.j}</td>
-                                <td class="px-6 py-4 text-center text-slate-300">${row.v}</td>
-                                <td class="px-6 py-4 text-center text-slate-300">${row.e}</td>
-                                <td class="px-6 py-4 text-center text-slate-300">${row.d}</td>
-                                <td class="px-6 py-4 text-center font-bold ${row.sg > 0 ? 'text-brand-500' : (row.sg < 0 ? 'text-red-400' : 'text-slate-400')}">${row.sg > 0 ? '+'+row.sg : row.sg}</td>
+                                <td class="px-4 py-4 text-center text-brand-500 font-bold text-lg">${row.p}</td>
+                                <td class="px-4 py-4 text-center text-slate-300">${row.j}</td>
+                                <td class="px-4 py-4 text-center text-slate-300">${row.v}</td>
+                                <td class="px-4 py-4 text-center text-slate-300">${row.e}</td>
+                                <td class="px-4 py-4 text-center text-slate-300">${row.d}</td>
+                                <td class="px-4 py-4 text-center text-slate-300">${row.gp}</td>
+                                <td class="px-4 py-4 text-center text-slate-300">${row.gc}</td>
+                                <td class="px-4 py-4 text-center font-bold ${row.sg > 0 ? 'text-brand-500' : (row.sg < 0 ? 'text-red-400' : 'text-slate-400')}">${row.sg > 0 ? '+'+row.sg : row.sg}</td>
+                                <td class="px-4 py-4 text-center text-slate-300 font-semibold">${aprov}%</td>
                             </tr>
                         `;
                     }).join('');
