@@ -3000,11 +3000,14 @@ let bestAttack = { name: '-', val: -1 };
                                 </div>
                             </div>
                         `;
-                        panel.classList.remove('hidden');
-                    };
-            
-            if (isAdmin) renderAdminChamps();
+                       panel.classList.remove('hidden');
+    };
+            }
         }
+    }
+
+    if (isAdmin) renderAdminChamps();
+}
 function toggleMobileMenu() {
     const menu = document.getElementById('mobile-menu');
     if (menu) {
