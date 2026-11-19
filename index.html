@@ -2731,108 +2731,277 @@ function switchChampSubTab(tab) {
                             }
                         });
 
-                        let bestAttack = { name: '-', val: -1 };
-                        let worstAttack = { name: '-', val: 999 };
-                        let bestDefense = { name: '-', val: 999 };
-                        let worstDefense = { name: '-', val: -1 };
-                        let topWinStreak = { name: '-', val: 0 };
-                        let topUnbeatenStreak = { name: '-', val: 0 };
+let bestAttack = { name: '-', val: -1 };
+                    let worstAttack = { name: '-', val: 999 };
+                    let bestDefense = { name: '-', val: 999 };
+                    let worstDefense = { name: '-', val: -1 };
+                    let topWinStreak = { name: '-', val: 0 };
+                    let topUnbeatenStreak = { name: '-', val: 0 };
 
-                        Object.entries(pStats).forEach(([id, s]) => {
-                            if (s.j === 0) return;
-                            let pName = getParticipantObj(champ, id).playerName;
-                            if (s.gp > bestAttack.val) bestAttack = { name: pName, val: s.gp };
-                            if (s.gp < worstAttack.val) worstAttack = { name: pName, val: s.gp };
-                            if (s.gc < bestDefense.val) bestDefense = { name: pName, val: s.gc };
-                            if (s.gc > worstDefense.val) worstDefense = { name: pName, val: s.gc };
-                            if (s.maxWin > topWinStreak.val) topWinStreak = { name: pName, val: s.maxWin };
-                            if (s.maxUnbeaten > topUnbeatenStreak.val) topUnbeatenStreak = { name: pName, val: s.maxUnbeaten };
+                    const activeStatsList = [];
+
+                    Object.entries(pStats).forEach(([id, s]) => {
+                        if (s.j === 0) return;
+                        let pObj = getParticipantObj(champ, id);
+                        let pName = pObj.playerName;
+
+                        activeStatsList.push({
+                            id,
+                            name: pName,
+                            teamName: pObj.teamName || '',
+                            logo: pObj.logo || '',
+                            j: s.j,
+                            gp: s.gp,
+                            gc: s.gc,
+                            avgGp: s.gp / s.j,
+                            avgGc: s.gc / s.j,
+                            maxWin: s.maxWin || 0,
+                            maxUnbeaten: s.maxUnbeaten || 0
                         });
-                        
-                        if(worstAttack.val === 999) worstAttack.val = 0;
-                        if(bestDefense.val === 999) bestDefense.val = 0;
 
-                        const isFinished = champ.matches.length > 0 && champ.matches.every(m => m.played);
-                        let championBanner = '';
-                        
-                        if (isFinished) {
-                            const champPlayerObj = getChampion(champ);
-                            if (champPlayerObj) {
-                                const isLeague = champ.format === 'league';
-                                const trophyImgUrl = isLeague ? TROPHY_LEAGUE_URL : TROPHY_CUP_URL;
-                                const trophyLabel = isLeague ? 'CAMPEÃO DA LIGA' : 'CAMPEÃO DA COPA';
-                                
-                                const avatar = champPlayerObj.logo 
-                                    ? `<img src="${escapeHTML(champPlayerObj.logo)}" class="w-full h-full object-contain p-1">` 
-                                    : `<div class="w-full h-full flex items-center justify-center font-display text-3xl text-white/20">${champPlayerObj.playerName.charAt(0).toUpperCase()}</div>`;
-                                championBanner = `
-                                    <div class="glass col-span-2 md:col-span-3 lg:col-span-4 p-6 rounded-2xl border border-yellow-400/50 relative overflow-hidden flex items-center gap-6 bg-gradient-to-r from-yellow-400/10 to-transparent mb-2">
-                                        <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.4)] bg-[#141419] shrink-0 z-10">
-                                            ${avatar}
+                        if (s.gp > bestAttack.val) bestAttack = { name: pName, val: s.gp };
+                        if (s.gp < worstAttack.val) worstAttack = { name: pName, val: s.gp };
+                        if (s.gc < bestDefense.val) bestDefense = { name: pName, val: s.gc };
+                        if (s.gc > worstDefense.val) worstDefense = { name: pName, val: s.gc };
+                        if (s.maxWin > topWinStreak.val) topWinStreak = { name: pName, val: s.maxWin };
+                        if (s.maxUnbeaten > topUnbeatenStreak.val) topUnbeatenStreak = { name: pName, val: s.maxUnbeaten };
+                    });
+
+                    if(worstAttack.val === 999) worstAttack.val = 0;
+                    if(bestDefense.val === 999) bestDefense.val = 0;
+
+                    const fmtAvg = (num) => num.toFixed(2).replace('.', ',');
+
+                    // Top 3 de cada categoria
+                    const top3BestAttack = [...activeStatsList]
+                        .sort((a, b) => b.gp - a.gp || b.avgGp - a.avgGp)
+                        .slice(0, 3)
+                        .map(p => ({ ...p, mainVal: `${p.gp} gols`, subVal: `Média de ${fmtAvg(p.avgGp)} gols/jogo (${p.j}J)` }));
+
+                    const top3WorstDefense = [...activeStatsList]
+                        .sort((a, b) => b.gc - a.gc || b.avgGc - a.avgGc)
+                        .slice(0, 3)
+                        .map(p => ({ ...p, mainVal: `${p.gc} sofridos`, subVal: `Média de ${fmtAvg(p.avgGc)} sofridos/jogo (${p.j}J)` }));
+
+                    const top3BestDefense = [...activeStatsList]
+                        .sort((a, b) => a.gc - b.gc || a.avgGc - b.avgGc || b.j - a.j)
+                        .slice(0, 3)
+                        .map(p => ({ ...p, mainVal: `${p.gc} sofridos`, subVal: `Média de ${fmtAvg(p.avgGc)} sofridos/jogo (${p.j}J)` }));
+
+                    const top3WorstAttack = [...activeStatsList]
+                        .sort((a, b) => a.gp - b.gp || a.avgGp - b.avgGp || b.j - a.j)
+                        .slice(0, 3)
+                        .map(p => ({ ...p, mainVal: `${p.gp} gols`, subVal: `Média de ${fmtAvg(p.avgGp)} gols/jogo (${p.j}J)` }));
+
+                    const top3WinStreak = [...activeStatsList]
+                        .filter(p => p.maxWin > 0)
+                        .sort((a, b) => b.maxWin - a.maxWin || b.gp - a.gp)
+                        .slice(0, 3)
+                        .map(p => ({ ...p, mainVal: `${p.maxWin} ${p.maxWin === 1 ? 'jogo' : 'jogos'}`, subVal: `Sequência máxima de vitórias` }));
+
+                    const top3Unbeaten = [...activeStatsList]
+                        .filter(p => p.maxUnbeaten > 0)
+                        .sort((a, b) => b.maxUnbeaten - a.maxUnbeaten || b.gp - a.gp)
+                        .slice(0, 3)
+                        .map(p => ({ ...p, mainVal: `${p.maxUnbeaten} ${p.maxUnbeaten === 1 ? 'jogo' : 'jogos'}`, subVal: `Sequência invicta na competição` }));
+
+                    const top3BiggestWins = (champ.matches || [])
+                        .filter(m => m.played && m.home !== 'BYE' && m.away !== 'BYE' && m.homeGoals !== m.awayGoals)
+                        .map(m => {
+                            const diff = Math.abs(m.homeGoals - m.awayGoals);
+                            const winnerId = m.homeGoals > m.awayGoals ? m.home : m.away;
+                            const winnerObj = getParticipantObj(champ, winnerId);
+                            const homeObj = getParticipantObj(champ, m.home);
+                            const awayObj = getParticipantObj(champ, m.away);
+                            return {
+                                name: `${homeObj.playerName} ${m.homeGoals} x ${m.awayGoals} ${awayObj.playerName}`,
+                                teamName: `${homeObj.teamName || 'Sem clube'} vs ${awayObj.teamName || 'Sem clube'}`,
+                                logo: winnerObj.logo || '',
+                                diff,
+                                totalGoals: m.homeGoals + m.awayGoals,
+                                mainVal: `+${diff} ${diff === 1 ? 'gol' : 'gols'}`,
+                                subVal: `Vitória de ${winnerObj.playerName}`
+                            };
+                        })
+                        .sort((a, b) => b.diff - a.diff || b.totalGoals - a.totalGoals)
+                        .slice(0, 3);
+
+                    window._champStatRankings = {
+                        bestAttack: { title: 'Top 3 — Melhor Ataque', accent: 'text-brand-500', items: top3BestAttack },
+                        worstDefense: { title: 'Top 3 — Pior Defesa', accent: 'text-red-400', items: top3WorstDefense },
+                        bestDefense: { title: 'Top 3 — Melhor Defesa', accent: 'text-brand-500', items: top3BestDefense },
+                        worstAttack: { title: 'Top 3 — Pior Ataque', accent: 'text-red-400', items: top3WorstAttack },
+                        winStreak: { title: 'Top 3 — Maior Sequência de Vitórias', accent: 'text-brand-500', items: top3WinStreak },
+                        unbeaten: { title: 'Top 3 — Maior Invencibilidade', accent: 'text-brand-500', items: top3Unbeaten },
+                        biggestWin: { title: 'Top 3 — Maiores Goleadas', accent: 'text-brand-500', items: top3BiggestWins }
+                    };
+                    window._activeStatKey = null;
+
+                    const isFinished = champ.matches.length > 0 && champ.matches.every(m => m.played);
+                    let championBanner = '';
+
+                    if (isFinished) {
+                        const champPlayerObj = getChampion(champ);
+                        if (champPlayerObj) {
+                            const isLeague = champ.format === 'league';
+                            const trophyImgUrl = isLeague ? TROPHY_LEAGUE_URL : TROPHY_CUP_URL;
+                            const trophyLabel = isLeague ? 'CAMPEÃO DA LIGA' : 'CAMPEÃO DA COPA';
+
+                            const avatar = champPlayerObj.logo
+                                ? `<img src="${escapeHTML(champPlayerObj.logo)}" class="w-full h-full object-contain p-1">`
+                                : `<div class="w-full h-full flex items-center justify-center font-display text-3xl text-white/20">${champPlayerObj.playerName.charAt(0).toUpperCase()}</div>`;
+
+                            championBanner = `
+                                <div class="glass col-span-2 md:col-span-3 lg:col-span-4 p-6 rounded-2xl border border-yellow-400/50 relative overflow-hidden flex items-center gap-6 bg-gradient-to-r from-yellow-400/10 to-transparent mb-2">
+                                    <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.4)] bg-[#141418] shrink-0 z-10">
+                                        ${avatar}
+                                    </div>
+                                    <div class="z-10">
+                                        <span class="text-[10px] text-yellow-400 font-bold uppercase tracking-widest block mb-1"><i class="ph-fill ph-trophy"></i> ${trophyLabel}</span>
+                                        <h4 class="font-display text-3xl text-white uppercase tracking-wide drop-shadow-md">${escapeHTML(champPlayerObj.playerName)}</h4>
+                                        ${champPlayerObj.teamName ? `<span class="text-xs text-yellow-400/80 font-bold uppercase block truncate mt-1">Representando o ${escapeHTML(champPlayerObj.teamName)}</span>` : ''}
+                                    </div>
+                                    <div class="absolute right-0 top-0 bottom-0 w-1/2 opacity-50 pointer-events-none" style="mask-image: linear-gradient(to left, black, transparent); -webkit-mask-image: linear-gradient(to left, black, transparent);">
+                                        <img src="${trophyImgUrl}" class="w-full h-full object-cover object-center mix-blend-screen" https://images.unsplash.com/photo-1578269174936-2709b6aeb913?auto=format&fit=crop&w=400';">
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+
+                    statsCont.innerHTML = `
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            ${championBanner}
+                            <div data-stat-card="bestAttack" onclick="toggleStatDetail('bestAttack')" class="glass p-5 rounded-2xl border border-white/5 hover:border-brand-500/40 relative overflow-hidden group cursor-pointer transition-all select-none">
+                                <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-brand-500/10 transition-colors"><i class="ph-fill ph-sword"></i></div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block">Melhor Ataque</span>
+                                    <span class="text-[9px] text-slate-500 group-hover:text-brand-500 font-bold uppercase transition-colors">Top 3 ▾</span>
+                                </div>
+                                <h4 class="font-display text-xl text-white truncate mt-1" title="${bestAttack.name}">${bestAttack.name}</h4>
+                                <span class="text-brand-500 font-black text-2xl">${bestAttack.val} <span class="text-xs text-slate-500 font-bold">GOLS</span></span>
+                            </div>
+                            <div data-stat-card="worstDefense" onclick="toggleStatDetail('worstDefense')" class="glass p-5 rounded-2xl border border-white/5 hover:border-red-500/40 relative overflow-hidden group cursor-pointer transition-all select-none">
+                                <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-red-500/10 transition-colors"><i class="ph-fill ph-shield-slash"></i></div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block">Pior Defesa</span>
+                                    <span class="text-[9px] text-slate-500 group-hover:text-red-400 font-bold uppercase transition-colors">Top 3 ▾</span>
+                                </div>
+                                <h4 class="font-display text-xl text-white truncate mt-1" title="${worstDefense.name}">${worstDefense.name}</h4>
+                                <span class="text-red-400 font-black text-2xl">${worstDefense.val} <span class="text-xs text-slate-500 font-bold">SOFRIDOS</span></span>
+                            </div>
+                            <div data-stat-card="bestDefense" onclick="toggleStatDetail('bestDefense')" class="glass p-5 rounded-2xl border border-white/5 hover:border-brand-500/40 relative overflow-hidden group cursor-pointer transition-all select-none">
+                                <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-brand-500/10 transition-colors"><i class="ph-fill ph-shield-check"></i></div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block">Melhor Defesa</span>
+                                    <span class="text-[9px] text-slate-500 group-hover:text-brand-500 font-bold uppercase transition-colors">Top 3 ▾</span>
+                                </div>
+                                <h4 class="font-display text-xl text-white truncate mt-1" title="${bestDefense.name}">${bestDefense.name}</h4>
+                                <span class="text-brand-500 font-black text-2xl">${bestDefense.val} <span class="text-xs text-slate-500 font-bold">SOFRIDOS</span></span>
+                            </div>
+                            <div data-stat-card="worstAttack" onclick="toggleStatDetail('worstAttack')" class="glass p-5 rounded-2xl border border-white/5 hover:border-red-500/40 relative overflow-hidden group cursor-pointer transition-all select-none">
+                                <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-red-500/10 transition-colors"><i class="ph-fill ph-trend-down"></i></div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block">Pior Ataque</span>
+                                    <span class="text-[9px] text-slate-500 group-hover:text-red-400 font-bold uppercase transition-colors">Top 3 ▾</span>
+                                </div>
+                                <h4 class="font-display text-xl text-white truncate mt-1" title="${worstAttack.name}">${worstAttack.name}</h4>
+                                <span class="text-red-400 font-black text-2xl">${worstAttack.val} <span class="text-xs text-slate-500 font-bold">GOLS</span></span>
+                            </div>
+                            <div data-stat-card="winStreak" onclick="toggleStatDetail('winStreak')" class="glass p-5 rounded-2xl border border-white/5 hover:border-brand-500/40 relative overflow-hidden group cursor-pointer transition-all select-none">
+                                <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-brand-500/10 transition-colors"><i class="ph-fill ph-fire"></i></div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block">Maior Seq. Vitórias</span>
+                                    <span class="text-[9px] text-slate-500 group-hover:text-brand-500 font-bold uppercase transition-colors">Top 3 ▾</span>
+                                </div>
+                                <h4 class="font-display text-xl text-white truncate mt-1" title="${topWinStreak.name}">${topWinStreak.name}</h4>
+                                <span class="text-brand-500 font-black text-2xl">${topWinStreak.val} <span class="text-xs text-slate-500 font-bold">JOGOS</span></span>
+                            </div>
+                            <div data-stat-card="unbeaten" onclick="toggleStatDetail('unbeaten')" class="glass p-5 rounded-2xl border border-white/5 hover:border-brand-500/40 relative overflow-hidden group cursor-pointer transition-all select-none">
+                                <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-brand-500/10 transition-colors"><i class="ph-fill ph-lock-key"></i></div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block">Invencibilidade</span>
+                                    <span class="text-[9px] text-slate-500 group-hover:text-brand-500 font-bold uppercase transition-colors">Top 3 ▾</span>
+                                </div>
+                                <h4 class="font-display text-xl text-white truncate mt-1" title="${topUnbeatenStreak.name}">${topUnbeatenStreak.name}</h4>
+                                <span class="text-brand-500 font-black text-2xl">${topUnbeatenStreak.val} <span class="text-xs text-slate-500 font-bold">JOGOS</span></span>
+                            </div>
+                            <div data-stat-card="biggestWin" onclick="toggleStatDetail('biggestWin')" class="glass p-5 rounded-2xl border border-white/5 hover:border-brand-500/40 relative overflow-hidden group md:col-span-2 cursor-pointer transition-all select-none">
+                                <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-brand-500/10 transition-colors"><i class="ph-fill ph-trophy"></i></div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block">Maior Goleada</span>
+                                    <span class="text-[9px] text-slate-500 group-hover:text-brand-500 font-bold uppercase transition-colors">Top 3 ▾</span>
+                                </div>
+                                <h4 class="font-display text-lg md:text-xl text-white mt-1 flex items-center w-full">${biggestWin.text}</h4>
+                                <span class="text-brand-500 font-black text-xs md:text-sm mt-1 block">Diferença de ${biggestWin.diff} gols</span>
+                            </div>
+                        </div>
+                        <div id="stat-detail-panel" class="hidden mt-4"></div>
+                    `;
+
+                    window.toggleStatDetail = function(key) {
+                        const panel = document.getElementById('stat-detail-panel');
+                        if (!panel || !window._champStatRankings) return;
+
+                        document.querySelectorAll('[data-stat-card]').forEach(el => {
+                            el.classList.remove('ring-2', 'ring-brand-500/60', 'bg-white/[0.04]');
+                        });
+
+                        if (window._activeStatKey === key) {
+                            window._activeStatKey = null;
+                            panel.classList.add('hidden');
+                            return;
+                        }
+
+                        window._activeStatKey = key;
+                        const activeCard = document.querySelector(`[data-stat-card="${key}"]`);
+                        if (activeCard) {
+                            activeCard.classList.add('ring-2', 'ring-brand-500/60', 'bg-white/[0.04]');
+                        }
+
+                        const data = window._champStatRankings[key];
+                        const medals = ['text-amber-400', 'text-slate-300', 'text-amber-600'];
+
+                        const rowsHtml = data.items.length > 0
+                            ? data.items.map((item, i) => {
+                                const avatar = item.logo
+                                    ? `<img src="${escapeHTML(item.logo)}" class="w-full h-full object-contain p-1">`
+                                    : `<div class="w-full h-full flex items-center justify-center font-display text-xs text-white/30">${escapeHTML(item.name).charAt(0).toUpperCase()}</div>`;
+
+                                return `
+                                    <div class="flex items-center justify-between gap-4 p-3 rounded-xl bg-black/30 border border-white/5">
+                                        <div class="flex items-center gap-3 min-w-0">
+                                            <span class="font-display font-black text-base w-6 text-center shrink-0 ${medals[i] || 'text-slate-400'}">${i + 1}º</span>
+                                            <div class="w-8 h-8 rounded-full bg-black/60 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
+                                                ${avatar}
+                                            </div>
+                                            <div class="min-w-0">
+                                                <div class="text-white font-bold text-sm truncate">${escapeHTML(item.name)}</div>
+                                                ${item.teamName ? `<div class="text-[10px] text-slate-400 uppercase font-semibold truncate">${escapeHTML(item.teamName)}</div>` : ''}
+                                            </div>
                                         </div>
-                                        <div class="z-10">
-                                            <span class="text-[10px] text-yellow-400 font-bold uppercase tracking-widest block mb-1"><i class="ph-fill ph-trophy"></i> ${trophyLabel}</span>
-                                            <h4 class="font-display text-3xl text-white uppercase tracking-wide truncate drop-shadow-md">${escapeHTML(champPlayerObj.playerName)}</h4>
-                                            ${champPlayerObj.teamName ? `<span class="text-xs text-yellow-400/80 font-bold uppercase block truncate mt-1">Representando o ${escapeHTML(champPlayerObj.teamName)}</span>` : ''}
-                                        </div>
-                                        <div class="absolute right-0 top-0 bottom-0 w-1/2 opacity-50 pointer-events-none" style="mask-image: linear-gradient(to left, black, transparent); -webkit-mask-image: linear-gradient(to left, black, transparent);">
-                                            <img src="${trophyImgUrl}" class="w-full h-full object-cover object-center mix-blend-screen" https://images.unsplash.com/photo-1578269174936-2709b6aeb913?auto=format&fit=crop&w=400';">
+                                        <div class="text-right shrink-0">
+                                            <div class="font-display font-black text-base ${data.accent}">${escapeHTML(item.mainVal)}</div>
+                                            <div class="text-[11px] text-slate-400">${escapeHTML(item.subVal)}</div>
                                         </div>
                                     </div>
                                 `;
-                            }
-                        }
+                            }).join('')
+                            : `<div class="text-sm text-slate-400 py-2">Nenhum registro suficiente nesta categoria ainda.</div>`;
 
-                        statsCont.innerHTML = `
-                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                ${championBanner}
-                                <div class="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
-                                    <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-brand-500/10 transition-colors"><i class="ph-fill ph-sword"></i></div>
-                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Melhor Ataque</span>
-                                    <h4 class="font-display text-xl text-white truncate mt-1" title="${bestAttack.name}">${bestAttack.name}</h4>
-                                    <span class="text-brand-500 font-black text-2xl">${bestAttack.val} <span class="text-xs text-slate-500 font-bold">GOLS</span></span>
+                        panel.innerHTML = `
+                            <div class="glass p-5 rounded-2xl border border-white/10 space-y-3">
+                                <div class="flex items-center justify-between border-b border-white/5 pb-3">
+                                    <span class="text-xs font-bold uppercase tracking-widest text-white">${escapeHTML(data.title)}</span>
+                                    <button onclick="toggleStatDetail('${key}')" class="text-slate-400 hover:text-white text-xs font-bold uppercase px-2 py-1 rounded-lg hover:bg-white/5 transition-colors">Fechar ✕</button>
                                 </div>
-                                <div class="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
-                                    <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-red-500/10 transition-colors"><i class="ph-fill ph-shield-slash"></i></div>
-                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Pior Defesa</span>
-                                    <h4 class="font-display text-xl text-white truncate mt-1" title="${worstDefense.name}">${worstDefense.name}</h4>
-                                    <span class="text-red-400 font-black text-2xl">${worstDefense.val} <span class="text-xs text-slate-500 font-bold">SOFRIDOS</span></span>
-                                </div>
-                                <div class="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
-                                    <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-brand-500/10 transition-colors"><i class="ph-fill ph-shield-check"></i></div>
-                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Melhor Defesa</span>
-                                    <h4 class="font-display text-xl text-white truncate mt-1" title="${bestDefense.name}">${bestDefense.name}</h4>
-                                    <span class="text-brand-500 font-black text-2xl">${bestDefense.val} <span class="text-xs text-slate-500 font-bold">SOFRIDOS</span></span>
-                                </div>
-                                <div class="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
-                                    <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-red-500/10 transition-colors"><i class="ph-fill ph-trend-down"></i></div>
-                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Pior Ataque</span>
-                                    <h4 class="font-display text-xl text-white truncate mt-1" title="${worstAttack.name}">${worstAttack.name}</h4>
-                                    <span class="text-red-400 font-black text-2xl">${worstAttack.val} <span class="text-xs text-slate-500 font-bold">GOLS</span></span>
-                                </div>
-                                <div class="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
-                                    <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-brand-500/10 transition-colors"><i class="ph-fill ph-fire"></i></div>
-                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Maior Seq. Vitórias</span>
-                                    <h4 class="font-display text-xl text-white truncate mt-1" title="${topWinStreak.name}">${topWinStreak.name}</h4>
-                                    <span class="text-brand-500 font-black text-2xl">${topWinStreak.val} <span class="text-xs text-slate-500 font-bold">JOGOS</span></span>
-                                </div>
-                                <div class="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
-                                    <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-brand-500/10 transition-colors"><i class="ph-fill ph-lock-key"></i></div>
-                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Invencibilidade</span>
-                                    <h4 class="font-display text-xl text-white truncate mt-1" title="${topUnbeatenStreak.name}">${topUnbeatenStreak.name}</h4>
-                                    <span class="text-brand-500 font-black text-2xl">${topUnbeatenStreak.val} <span class="text-xs text-slate-500 font-bold">JOGOS</span></span>
-                                </div>
-                                <div class="glass p-5 rounded-2xl border border-white/5 relative overflow-hidden group md:col-span-2">
-                                    <div class="absolute -right-4 -top-4 text-white/5 text-7xl group-hover:text-brand-500/10 transition-colors"><i class="ph-fill ph-trophy"></i></div>
-                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Maior Goleada</span>
-                                    <h4 class="font-display text-lg md:text-xl text-white mt-1 flex items-center w-full">${biggestWin.text}</h4>
-                                    <span class="text-brand-500 font-black text-xs md:text-sm mt-1 block">Diferença de ${biggestWin.diff} gols</span>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    ${rowsHtml}
                                 </div>
                             </div>
                         `;
-                    }
-                }
-            }
+                        panel.classList.remove('hidden');
+                    };
             
             if (isAdmin) renderAdminChamps();
         }
