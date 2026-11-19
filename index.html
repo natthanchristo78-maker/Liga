@@ -2421,9 +2421,18 @@ function switchChampSubTab(tab) {
                         <div class="glass glass-hover p-6 rounded-2xl cursor-pointer group relative overflow-hidden flex flex-col w-full" onclick="openChampDetails('${c.id}')">
                             <div class="absolute -top-10 -right-10 w-32 h-32 bg-brand-500/5 blur-3xl rounded-full group-hover:bg-brand-500/10 transition-all"></div>
                             
-                            <div class="flex items-start w-full">
-                                <span class="text-[9px] uppercase font-bold tracking-[0.2em] text-black bg-brand-500 px-3 py-1 rounded-full shadow-[0_0_10px_rgba(200,255,0,0.2)]">${formatStr}</span>
-                            </div>
+                           <div class="flex items-center justify-between gap-2 w-full">
+                    <span class="text-[9px] uppercase font-bold tracking-[0.2em] text-black bg-brand-500 px-3 py-1 rounded-full shadow-[0_0_10px_rgba(200,255,0,0.2)]">${formatStr}</span>
+                    <div class="flex items-center gap-1.5 text-white/85 group-hover:text-white transition-colors select-none shrink-0" title="EA SPORTS FC 27">
+                        <svg class="w-5 h-5 shrink-0" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="16" cy="16" r="15" fill="currentColor"/>
+                            <path d="M9.8 11.2H16.4L15.7 13.2H11.5L11.1 14.3H14.8L14.1 16.2H10.4L10 17.4H14.3L13.6 19.4H7L9.8 11.2Z" fill="#09090b"/>
+                            <path d="M19.6 11.2H22.5L24.1 19.4H21.4L21.1 17.7H18.2L17.4 19.4H14.7L19.6 11.2ZM19.1 15.8H20.8L20.5 13.5L19.1 15.8Z" fill="#09090b"/>
+                            <text x="16" y="23.8" text-anchor="middle" fill="#09090b" font-family="Arial, sans-serif" font-weight="900" font-size="4.4" letter-spacing="0.4">SPORTS</text>
+                        </svg>
+                        <span class="font-display italic font-black text-base tracking-tight leading-none">FC 27</span>
+                    </div>
+                </div>
                             
                             <h3 class="font-display text-2xl font-black mt-5 mb-1 text-white group-hover:text-brand-500 transition-colors uppercase tracking-wide truncate w-full">${escapeHTML(c.name)}</h3>
                             <p class="text-xs text-slate-400 mb-6 font-medium truncate w-full">${c.teamIds ? c.teamIds.length : 0} Equipes Participantes</p>
