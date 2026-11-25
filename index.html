@@ -322,7 +322,20 @@
                 </div>
             </div>
         </div>
+ 
+        <!-- Modal Interativo: Galeria de Troféus -->
+    <div id="modal-trophy-details" onclick="if (event.target === this) closeTrophyModal()" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+        <div class="bg-[#121217] border border-yellow-500/30 rounded-3xl w-full max-w-4xl my-auto shadow-[0_0_60px_rgba(234,179,8,0.15)] overflow-hidden relative">
+            <button type="button" onclick="closeTrophyModal()" class="absolute top-4 right-4 z-30 w-10 h-10 rounded-full bg-black/60 hover:bg-white/15 border border-white/15 flex items-center justify-center text-slate-300 hover:text-white transition cursor-pointer">
+                <i class="ph-bold ph-x text-lg"></i>
+            </button>
 
+            <div id="trophy-modal-content" class="max-h-[88vh] overflow-y-auto">
+                <!-- Banner do Campeão, Estatísticas Gerais e Tabela Final gerados via JS -->
+            </div>
+        </div>
+    </div>
+        
         <!-- Tab: Jogadores -->
         <div id="view-players" class="space-y-10 hidden animate-[fadeIn_0.5s_ease-out]">
             <div id="block-add-player" class="hidden glass p-8 rounded-3xl relative overflow-hidden">
@@ -2662,6 +2675,381 @@ function switchChampSubTab(tab) {
                 return getParticipantObj(champ, homeId);
             }
             
+            function resolveChampParticipantAssets(champ, participantId) {
+            const p = getParticipantObj(champ, participantId) || {};
+            const playerName = p.playerName || 'Jogador';
+            const rawTeamName = p.teamName || '';
+
+            const playerObj = (state.players || []).find(pl =>
+                pl.id === p.playerId ||
+                pl.id === participantId ||
+                (pl.name && pl.name.trim().toLowerCase() === playerName.trim().toLowerCase())
+            );
+
+            const teamObj = (state.teams || []).find(tm =>
+                tm.id === p.teamId ||
+                (rawTeamName && tm.name && tm.name.trim().toLowerCase() === rawTeamName.trim().toLowerCase())
+            );
+
+            const playerPhoto = (playerObj && playerObj.logo) || p.playerLogo || p.logo || '';
+            const teamLogo = (teamObj && teamObj.logo) || p.teamLogo || '';
+            const teamName = (teamObj && teamObj.name) || rawTeamName;
+
+            return { id: participantId, playerName, teamName, playerPhoto, teamLogo };
+        }
+
+        function computeChampionshipSummaryStats(champ) {
+            const table = {};
+            (champ.teamIds || []).forEach(id => {
+                table[id] = { id, p: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, sg: 0 };
+            });
+
+            let totalGoals = 0;
+            let playedCount = 0;
+            let biggestBlowout = null;
+
+            (champ.matches || []).forEach(m => {
+                if (!m.played || m.home === 'BYE' || m.away === 'BYE') return;
+
+                const hg = Number(m.homeGoals) || 0;
+                const ag = Number(m.awayGoals) || 0;
+
+                playedCount++;
+                totalGoals += (hg + ag);
+
+                if (!table[m.home]) table[m.home] = { id: m.home, p: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, sg: 0 };
+                if (!table[m.away]) table[m.away] = { id: m.away, p: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, sg: 0 };
+
+                table[m.home].j++;
+                table[m.away].j++;
+                table[m.home].gp += hg;
+                table[m.home].gc += ag;
+                table[m.away].gp += ag;
+                table[m.away].gc += hg;
+
+                if (m.rageQuit === 'home') {
+                    table[m.away].v++; table[m.away].p += 3;
+                    table[m.home].d++; table[m.home].p -= 3;
+                } else if (m.rageQuit === 'away') {
+                    table[m.home].v++; table[m.home].p += 3;
+                    table[m.away].d++; table[m.away].p -= 3;
+                } else if (hg > ag) {
+                    table[m.home].v++; table[m.home].p += 3; table[m.away].d++;
+                } else if (hg < ag) {
+                    table[m.away].v++; table[m.away].p += 3; table[m.home].d++;
+                } else {
+                    table[m.home].e++; table[m.away].e++; table[m.home].p++; table[m.away].p++;
+                }
+
+                const diff = Math.abs(hg - ag);
+                const sumGoals = hg + ag;
+                if (
+                    !biggestBlowout ||
+                    diff > biggestBlowout.diff ||
+                    (diff === biggestBlowout.diff && sumGoals > biggestBlowout.sumGoals)
+                ) {
+                    const homeWinner = hg >= ag;
+                    biggestBlowout = {
+                        diff,
+                        sumGoals,
+                        winnerId: homeWinner ? m.home : m.away,
+                        loserId: homeWinner ? m.away : m.home,
+                        winnerGoals: homeWinner ? hg : ag,
+                        loserGoals: homeWinner ? ag : hg,
+                        isDraw: hg === ag
+                    };
+                }
+            });
+
+            Object.values(table).forEach(t => { t.sg = t.gp - t.gc; });
+
+            const sortedStandings = Object.values(table)
+                .filter(t => t.j > 0)
+                .sort((a, b) => b.p - a.p || b.sg - a.sg || b.gp - a.gp);
+
+            const bestAttackRow = [...sortedStandings].sort((a, b) => b.gp - a.gp || b.sg - a.sg)[0] || null;
+            const bestDefenseRow = [...sortedStandings].sort((a, b) => a.gc - b.gc || b.sg - a.sg)[0] || null;
+            const avgGoals = playedCount > 0 ? (totalGoals / playedCount).toFixed(2) : '0.00';
+
+            let championId = null;
+            if (champ.format === 'knockout' && champ.matches && champ.matches[0] && champ.matches[0].nodeId) {
+                const finalNodes = champ.matches.filter(m => !m.nextId);
+                if (finalNodes.length && finalNodes.every(m => m.played)) {
+                    let hScore = 0, aScore = 0;
+                    const homeId = finalNodes[0].home;
+                    const awayId = finalNodes[0].away;
+                    finalNodes.forEach(m => {
+                        if (m.home === homeId) { hScore += m.homeGoals; aScore += m.awayGoals; }
+                        else { hScore += m.awayGoals; aScore += m.homeGoals; }
+                    });
+                    championId = aScore > hScore ? awayId : homeId;
+                }
+            } else if (sortedStandings.length > 0) {
+                championId = sortedStandings[0].id;
+            }
+
+            return {
+                sortedStandings,
+                totalGoals,
+                playedCount,
+                avgGoals,
+                bestAttack: bestAttackRow ? { ...bestAttackRow, assets: resolveChampParticipantAssets(champ, bestAttackRow.id) } : null,
+                bestDefense: bestDefenseRow ? { ...bestDefenseRow, assets: resolveChampParticipantAssets(champ, bestDefenseRow.id) } : null,
+                biggestBlowout: biggestBlowout ? {
+                    ...biggestBlowout,
+                    winner: resolveChampParticipantAssets(champ, biggestBlowout.winnerId),
+                    loser: resolveChampParticipantAssets(champ, biggestBlowout.loserId)
+                } : null,
+                champion: championId ? resolveChampParticipantAssets(champ, championId) : null
+            };
+        }
+
+        function openTrophyModal(champId) {
+            const champ = (state.championships || []).find(c => c.id === champId);
+            const modal = document.getElementById('modal-trophy-details');
+            const contentEl = document.getElementById('trophy-modal-content');
+            if (!champ || !modal || !contentEl) return;
+
+            const stats = computeChampionshipSummaryStats(champ);
+            const isLeague = champ.format === 'league';
+            const trophyIconUrl = isLeague ? TROPHY_LEAGUE_URL : TROPHY_CUP_URL;
+            const titleTag = isLeague ? 'CAMPEÃO OFICIAL DA LIGA' : 'CAMPEÃO OFICIAL DA COPA';
+            const champData = stats.champion || { playerName: 'Campeão', teamName: '', playerPhoto: '', teamLogo: '' };
+
+            const championRow = stats.sortedStandings.find(r => r.id === champData.id);
+            const champAprov = championRow && championRow.j > 0
+                ? Math.round((championRow.p / (championRow.j * 3)) * 100)
+                : null;
+
+            const playerPhotoHtml = champData.playerPhoto
+                ? `<img src="${escapeHTML(champData.playerPhoto)}" alt="${escapeHTML(champData.playerName)}" class="w-full h-full object-cover object-top">`
+                : `<div class="w-full h-full flex items-center justify-center font-display text-5xl font-black text-yellow-400 bg-slate-900">${escapeHTML(champData.playerName.charAt(0).toUpperCase())}</div>`;
+
+            const shadedTeamBackdropHtml = champData.teamLogo
+                ? `<img src="${escapeHTML(champData.teamLogo)}" alt="" aria-hidden="true" class="pointer-events-none select-none absolute -right-6 -bottom-8 w-64 h-64 sm:w-80 sm:h-80 object-contain opacity-[0.16] blur-[0.5px] drop-shadow-[0_0_25px_rgba(0,0,0,0.9)]">`
+                : '';
+
+            const clearTeamBadgeHtml = champData.teamName
+                ? `
+                    <div class="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-black/65 border border-yellow-400/40 shadow-lg backdrop-blur-md mt-3">
+                        ${champData.teamLogo
+                            ? `<img src="${escapeHTML(champData.teamLogo)}" alt="${escapeHTML(champData.teamName)}" class="w-6 h-6 object-contain shrink-0">`
+                            : `<i class="ph-fill ph-shield-star text-yellow-400 text-lg shrink-0"></i>`
+                        }
+                        <div class="text-left">
+                            <span class="block text-[9px] font-bold uppercase tracking-widest text-slate-400 leading-none">Clube Campeão</span>
+                            <span class="block text-sm font-black uppercase tracking-wide text-white mt-0.5">${escapeHTML(champData.teamName)}</span>
+                        </div>
+                    </div>
+                `
+                : '';
+
+            const standingsSectionHtml = isLeague
+                ? `
+                    <div class="rounded-2xl border border-white/10 bg-black/30 overflow-hidden">
+                        <div class="px-5 py-4 border-b border-white/10 bg-white/[0.02] flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2.5">
+                                <i class="ph-fill ph-ranking text-yellow-400 text-xl"></i>
+                                <h4 class="font-display text-base font-bold uppercase tracking-wider text-white">Classificação Final Congelada</h4>
+                            </div>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">${stats.sortedStandings.length} Participantes</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs whitespace-nowrap">
+                                <thead class="bg-black/50 text-slate-400 text-[10px] uppercase font-bold tracking-widest">
+                                    <tr>
+                                        <th class="px-3 py-3 text-center w-10">Pos</th>
+                                        <th class="px-3 py-3">Jogador / Clube</th>
+                                        <th class="px-3 py-3 text-center text-yellow-400">PTS</th>
+                                        <th class="px-3 py-3 text-center">J</th>
+                                        <th class="px-3 py-3 text-center">V</th>
+                                        <th class="px-3 py-3 text-center">E</th>
+                                        <th class="px-3 py-3 text-center">D</th>
+                                        <th class="px-3 py-3 text-center">GM</th>
+                                        <th class="px-3 py-3 text-center">GS</th>
+                                        <th class="px-3 py-3 text-center">SG</th>
+                                        <th class="px-3 py-3 text-center">%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${stats.sortedStandings.map((row, idx) => {
+                                        const assets = resolveChampParticipantAssets(champ, row.id);
+                                        const aprov = row.j > 0 ? Math.round((row.p / (row.j * 3)) * 100) : 0;
+                                        const isChampRow = idx === 0;
+                                        return `
+                                            <tr class="border-b border-white/5 last:border-0 ${isChampRow ? 'bg-yellow-500/10' : 'hover:bg-white/[0.02]'}">
+                                                <td class="px-3 py-3 text-center font-display font-bold ${isChampRow ? 'text-yellow-400 text-sm' : 'text-slate-400'}">${idx + 1}º</td>
+                                                <td class="px-3 py-3">
+                                                    <div class="flex items-center gap-2.5">
+                                                        <div class="w-7 h-7 rounded-full bg-black/50 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
+                                                            ${assets.teamLogo
+                                                                ? `<img src="${escapeHTML(assets.teamLogo)}" class="w-full h-full object-contain p-0.5">`
+                                                                : assets.playerPhoto
+                                                                    ? `<img src="${escapeHTML(assets.playerPhoto)}" class="w-full h-full object-cover">`
+                                                                    : `<span class="text-[10px] font-bold text-slate-400">${escapeHTML(assets.playerName.charAt(0).toUpperCase())}</span>`
+                                                            }
+                                                        </div>
+                                                        <div>
+                                                            <span class="block font-bold text-white leading-tight">${escapeHTML(assets.playerName)}</span>
+                                                            ${assets.teamName ? `<span class="block text-[10px] font-bold uppercase text-slate-400">${escapeHTML(assets.teamName)}</span>` : ''}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-3 py-3 text-center font-black ${isChampRow ? 'text-yellow-400 text-sm' : 'text-white'}">${row.p}</td>
+                                                <td class="px-3 py-3 text-center text-slate-300">${row.j}</td>
+                                                <td class="px-3 py-3 text-center text-emerald-400 font-semibold">${row.v}</td>
+                                                <td class="px-3 py-3 text-center text-slate-400">${row.e}</td>
+                                                <td class="px-3 py-3 text-center text-red-400">${row.d}</td>
+                                                <td class="px-3 py-3 text-center text-slate-300">${row.gp}</td>
+                                                <td class="px-3 py-3 text-center text-slate-300">${row.gc}</td>
+                                                <td class="px-3 py-3 text-center font-semibold ${row.sg > 0 ? 'text-emerald-400' : row.sg < 0 ? 'text-red-400' : 'text-slate-400'}">${row.sg > 0 ? '+' + row.sg : row.sg}</td>
+                                                <td class="px-3 py-3 text-center text-slate-400">${aprov}%</td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `
+                : `
+                    <div class="rounded-2xl border border-white/10 bg-black/30 p-5">
+                        <div class="flex items-center gap-2.5 mb-4">
+                            <i class="ph-fill ph-trophy text-yellow-400 text-xl"></i>
+                            <h4 class="font-display text-base font-bold uppercase tracking-wider text-white">Jogos Decisivos da Copa</h4>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            ${(champ.matches || []).filter(m => m.played && m.home !== 'BYE' && m.away !== 'BYE').map(m => {
+                                const h = resolveChampParticipantAssets(champ, m.home);
+                                const a = resolveChampParticipantAssets(champ, m.away);
+                                return `
+                                    <div class="p-3.5 rounded-xl bg-white/[0.03] border border-white/5 flex items-center justify-between gap-2 text-xs">
+                                        <div class="min-w-0 flex-1">
+                                            <span class="block font-bold text-white truncate">${escapeHTML(h.playerName)}</span>
+                                            ${h.teamName ? `<span class="block text-[10px] text-slate-400 truncate">${escapeHTML(h.teamName)}</span>` : ''}
+                                        </div>
+                                        <div class="px-3 py-1 rounded-lg bg-black/60 border border-white/10 font-display font-black text-sm text-yellow-400 shrink-0">
+                                            ${m.homeGoals} x ${m.awayGoals}
+                                        </div>
+                                        <div class="min-w-0 flex-1 text-right">
+                                            <span class="block font-bold text-white truncate">${escapeHTML(a.playerName)}</span>
+                                            ${a.teamName ? `<span class="block text-[10px] text-slate-400 truncate">${escapeHTML(a.teamName)}</span>` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+
+            contentEl.innerHTML = `
+                <!-- Banner Automático do Campeão -->
+                <div class="relative overflow-hidden bg-gradient-to-br from-[#1f1a0d] via-[#15151c] to-[#0d0d12] border-b border-yellow-500/25 p-6 sm:p-10">
+                    <div class="absolute -top-24 -left-24 w-72 h-72 bg-yellow-500/15 blur-3xl rounded-full pointer-events-none"></div>
+                    ${shadedTeamBackdropHtml}
+
+                    <div class="relative z-10 flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
+                        <!-- Foto do Campeão + Mini Troféu -->
+                        <div class="relative shrink-0">
+                            <div class="w-32 h-32 sm:w-40 sm:h-40 rounded-3xl overflow-hidden border-2 border-yellow-400 shadow-[0_0_35px_rgba(250,204,21,0.35)] bg-slate-900">
+                                ${playerPhotoHtml}
+                            </div>
+                            <div class="w-12 h-14 rounded-xl overflow-hidden border border-yellow-400/60 shadow-xl bg-black absolute -bottom-3 -right-3">
+                                <img src="${trophyIconUrl}" alt="Troféu" class="w-full h-full object-cover">
+                            </div>
+                        </div>
+
+                        <!-- Dados do Título e Clube -->
+                        <div class="text-center sm:text-left flex-1 min-w-0">
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-400/15 border border-yellow-400/30 text-yellow-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">
+                                <i class="ph-fill ph-crown"></i> ${titleTag}
+                            </div>
+                            <p class="text-xs sm:text-sm font-bold uppercase tracking-widest text-slate-400">${escapeHTML(champ.name)}</p>
+                            <h2 class="font-display text-3xl sm:text-5xl font-black uppercase tracking-tight text-white mt-1 break-words drop-shadow">
+                                ${escapeHTML(champData.playerName)}
+                            </h2>
+
+                            <div class="flex flex-wrap items-center justify-center sm:justify-start gap-3">
+                                ${clearTeamBadgeHtml}
+                                ${isLeague && championRow ? `
+                                    <div class="inline-flex items-center gap-3 px-4 py-2 rounded-2xl bg-white/[0.04] border border-white/10 mt-3 text-left">
+                                        <div>
+                                            <span class="block text-[9px] font-bold uppercase tracking-widest text-slate-400 leading-none">Campanha</span>
+                                            <span class="block text-xs font-bold text-white mt-1">${championRow.p} pts • ${championRow.v}V ${championRow.e}E ${championRow.d}D (${champAprov}%)</span>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Corpo: Estatísticas Gerais + Tabela Final -->
+                <div class="p-6 sm:p-8 space-y-6">
+                    <!-- Cards de Estatísticas da Edição -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                        <div class="p-4 rounded-2xl bg-white/[0.03] border border-white/10">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                                <i class="ph-fill ph-soccer-ball text-brand-500 text-sm"></i> Gols no Torneio
+                            </span>
+                            <p class="font-display text-2xl sm:text-3xl font-black text-white mt-1.5">${stats.totalGoals}</p>
+                            <span class="text-[11px] text-slate-400">Média de <strong class="text-slate-200">${stats.avgGoals}</strong> por jogo (${stats.playedCount} partidas)</span>
+                        </div>
+
+                        <div class="p-4 rounded-2xl bg-white/[0.03] border border-white/10">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
+                                <i class="ph-fill ph-fire text-sm"></i> Melhor Ataque
+                            </span>
+                            ${stats.bestAttack ? `
+                                <p class="font-display text-lg sm:text-xl font-black text-white mt-1.5 truncate">${escapeHTML(stats.bestAttack.assets.playerName)}</p>
+                                <span class="block text-[11px] text-slate-400 truncate">${stats.bestAttack.assets.teamName ? escapeHTML(stats.bestAttack.assets.teamName) + ' • ' : ''}<strong class="text-emerald-400">${stats.bestAttack.gp} gols pró</strong></span>
+                            ` : `<p class="text-sm text-slate-500 mt-2">-</p>`}
+                        </div>
+
+                        <div class="p-4 rounded-2xl bg-white/[0.03] border border-white/10">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-sky-400 flex items-center gap-1.5">
+                                <i class="ph-fill ph-shield-check text-sm"></i> Melhor Defesa
+                            </span>
+                            ${stats.bestDefense ? `
+                                <p class="font-display text-lg sm:text-xl font-black text-white mt-1.5 truncate">${escapeHTML(stats.bestDefense.assets.playerName)}</p>
+                                <span class="block text-[11px] text-slate-400 truncate">${stats.bestDefense.assets.teamName ? escapeHTML(stats.bestDefense.assets.teamName) + ' • ' : ''}<strong class="text-sky-400">${stats.bestDefense.gc} gols sofridos</strong></span>
+                            ` : `<p class="text-sm text-slate-500 mt-2">-</p>`}
+                        </div>
+
+                        <div class="p-4 rounded-2xl bg-white/[0.03] border border-white/10">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-amber-400 flex items-center gap-1.5">
+                                <i class="ph-fill ph-lightning text-sm"></i> ${stats.biggestBlowout && stats.biggestBlowout.isDraw ? 'Jogo com Mais Gols' : 'Maior Goleada'}
+                            </span>
+                            ${stats.biggestBlowout ? `
+                                <p class="font-display text-xl sm:text-2xl font-black text-amber-400 mt-1">${stats.biggestBlowout.winnerGoals} x ${stats.biggestBlowout.loserGoals}</p>
+                                <span class="block text-[11px] text-slate-300 truncate">${escapeHTML(stats.biggestBlowout.winner.playerName)} <span class="text-slate-500">sobre</span> ${escapeHTML(stats.biggestBlowout.loser.playerName)}</span>
+                            ` : `<p class="text-sm text-slate-500 mt-2">-</p>`}
+                        </div>
+                    </div>
+
+                    <!-- Classificação Final ou Chave -->
+                    ${standingsSectionHtml}
+
+                    <!-- Rodapé do Modal -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+                        <button type="button" onclick="closeTrophyModal(); openChampDetails('${champ.id}')" class="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition cursor-pointer">
+                            <i class="ph-bold ph-list-bullets text-base"></i> Ver Todas as Rodadas e Detalhes
+                        </button>
+                        <button type="button" onclick="closeTrophyModal()" class="px-5 py-2.5 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-black font-black text-xs uppercase tracking-wider transition cursor-pointer">
+                            Fechar
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeTrophyModal() {
+            const modal = document.getElementById('modal-trophy-details');
+            if (modal) modal.classList.add('hidden');
+        }
+            
             // Lógica de Campeão para Pontos Corridos
             let table = {};
             champ.teamIds.forEach(id => {
@@ -2858,7 +3246,7 @@ function switchChampSubTab(tab) {
                         : `<div class="w-full h-full flex items-center justify-center font-display text-4xl text-white/20">${champPlayerObj.playerName.charAt(0).toUpperCase()}</div>`;
                         
                     return `
-                        <div class="glass glass-hover p-6 rounded-2xl cursor-pointer group relative overflow-hidden text-center border border-yellow-400/30" onclick="openChampDetails('${c.id}')">
+                           <div class="glass glass-hover p-6 rounded-2xl cursor-pointer group relative overflow-hidden text-center border border-yellow-400/30" onclick="openTrophyModal('${c.id}')">
                             <div class="absolute -top-10 -right-10 w-32 h-32 bg-yellow-400/10 blur-3xl rounded-full group-hover:bg-yellow-400/20 transition-all"></div>
                             
                             ${trophyIcon}
