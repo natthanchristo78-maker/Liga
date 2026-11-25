@@ -2187,15 +2187,65 @@ function switchChampSubTab(tab) {
         });
     }
         
+        function toggleRageQuitBox(matchId) {
+            const box = document.getElementById(`rq-options-${matchId}`);
+            if (box) box.classList.toggle('hidden');
+        }
+
+        function selectRageQuit(matchId, side, homeName, awayName) {
+            const rqInput = document.getElementById(`admin-rq-${matchId}`);
+            const hInput = document.getElementById(`admin-h-${matchId}`);
+            const aInput = document.getElementById(`admin-a-${matchId}`);
+            const label = document.getElementById(`rq-btn-label-${matchId}`);
+            const optHome = document.getElementById(`rq-opt-home-${matchId}`);
+            const optAway = document.getElementById(`rq-opt-away-${matchId}`);
+            if (!rqInput || !hInput || !aInput) return;
+
+            rqInput.value = side;
+
+            if (side === 'home') {
+                if (hInput.value.trim() === '' && aInput.value.trim() === '') {
+                    hInput.value = 0;
+                    aInput.value = 3;
+                }
+                if (label) label.textContent = `Rage Quit: ${homeName} (-3 pts)`;
+                if (optHome) optHome.className = 'p-3 rounded-xl border text-left transition-all bg-red-500/20 border-red-500 text-white';
+                if (optAway) optAway.className = 'p-3 rounded-xl border text-left transition-all bg-black/40 border-white/10 text-slate-300 hover:border-red-500/40';
+            } else if (side === 'away') {
+                if (hInput.value.trim() === '' && aInput.value.trim() === '') {
+                    hInput.value = 3;
+                    aInput.value = 0;
+                }
+                if (label) label.textContent = `Rage Quit: ${awayName} (-3 pts)`;
+                if (optAway) optAway.className = 'p-3 rounded-xl border text-left transition-all bg-red-500/20 border-red-500 text-white';
+                if (optHome) optHome.className = 'p-3 rounded-xl border text-left transition-all bg-black/40 border-white/10 text-slate-300 hover:border-red-500/40';
+            } else {
+                if (label) label.textContent = 'Rage Quit';
+                if (optHome) optHome.className = 'p-3 rounded-xl border text-left transition-all bg-black/40 border-white/10 text-slate-300 hover:border-red-500/40';
+                if (optAway) optAway.className = 'p-3 rounded-xl border text-left transition-all bg-black/40 border-white/10 text-slate-300 hover:border-red-500/40';
+            }
+        }
+
         function saveScore(champId, matchId) {
             if (!isAdmin) return showToast("Acesso restrito (Somente Admin)", "error");
             
             const hInput = document.getElementById(`admin-h-${matchId}`);
             const aInput = document.getElementById(`admin-a-${matchId}`);
+            const rqInput = document.getElementById(`admin-rq-${matchId}`);
             if(!hInput || !aInput) return;
 
-            const hg = hInput.value.trim() === '' ? null : parseInt(hInput.value);
-            const ag = aInput.value.trim() === '' ? null : parseInt(aInput.value);
+            let hg = hInput.value.trim() === '' ? null : parseInt(hInput.value);
+            let ag = aInput.value.trim() === '' ? null : parseInt(aInput.value);
+            const rq = rqInput && (rqInput.value === 'home' || rqInput.value === 'away') ? rqInput.value : null;
+
+            // Garante placar mínimo de vitória caso Rage Quit seja marcado sem gols preenchidos
+            if (rq === 'home' && (hg === null || ag === null || ag <= hg)) {
+                hg = hg !== null ? hg : 0;
+                ag = Math.max(ag !== null ? ag : 3, hg + 1);
+            } else if (rq === 'away' && (hg === null || ag === null || hg <= ag)) {
+                ag = ag !== null ? ag : 0;
+                hg = Math.max(hg !== null ? hg : 3, ag + 1);
+            }
 
             const champ = state.championships.find(c => c.id === champId);
             if(champ) {
@@ -2203,6 +2253,7 @@ function switchChampSubTab(tab) {
                 if(match) {
                     match.homeGoals = hg;
                     match.awayGoals = ag;
+                    match.rageQuit = (hg !== null && ag !== null) ? rq : null;
                     match.played = (hg !== null && ag !== null);
                     
                     // Lógica de Avanço Automático do Mata-Mata
@@ -2221,9 +2272,11 @@ function switchChampSubTab(tab) {
                             });
                             
                             let winner = null;
-                            if (hScore > aScore) winner = homeId;
+                            if (match.rageQuit === 'home') winner = match.away;
+                            else if (match.rageQuit === 'away') winner = match.home;
+                            else if (hScore > aScore) winner = homeId;
                             else if (aScore > hScore) winner = awayId;
-                            else winner = homeId; // Em caso de empate absoluto, avança o mandante por padrão (Para desempatar, basta o Admin adicionar 1 gol).
+                            else winner = homeId;
                             
                             // Aplica o vencedor na próxima fase da chave
                             const nextMatches = champ.matches.filter(m => m.nodeId === match.nextId);
@@ -2239,7 +2292,7 @@ function switchChampSubTab(tab) {
                     }
 
                     saveData();
-                    showToast("Placar atualizado!");
+                    showToast(match.rageQuit ? "Placar salvo com punição de Rage Quit (-3 pts)!" : "Placar atualizado!");
                 }
             }
         }
@@ -2541,16 +2594,26 @@ function switchChampSubTab(tab) {
                     });
 
                     champ.matches.forEach(m => {
-                        if (m.played && m.home !== 'BYE' && m.away !== 'BYE') {
-                            table[m.home].j++; table[m.away].j++;
-                            table[m.home].gp += m.homeGoals; table[m.home].gc += m.awayGoals;
-                            table[m.away].gp += m.awayGoals; table[m.away].gc += m.homeGoals;
+            if (m.played && m.home !== 'BYE' && m.away !== 'BYE') {
+                table[m.home].j++; table[m.away].j++;
+                table[m.home].gp += m.homeGoals; table[m.home].gc += m.awayGoals;
+                table[m.away].gp += m.awayGoals; table[m.away].gc += m.homeGoals;
 
-                            if (m.homeGoals > m.awayGoals) { table[m.home].v++; table[m.home].p += 3; table[m.away].d++; }
-                            else if (m.homeGoals < m.awayGoals) { table[m.away].v++; table[m.away].p += 3; table[m.home].d++; }
-                            else { table[m.home].e++; table[m.away].e++; table[m.home].p++; table[m.away].p++; }
-                        }
-                    });
+                if (m.rageQuit === 'home') {
+                    table[m.away].v++; table[m.away].p += 3;
+                    table[m.home].d++; table[m.home].p -= 3;
+                } else if (m.rageQuit === 'away') {
+                    table[m.home].v++; table[m.home].p += 3;
+                    table[m.away].d++; table[m.away].p -= 3;
+                } else if (m.homeGoals > m.awayGoals) {
+                    table[m.home].v++; table[m.home].p += 3; table[m.away].d++;
+                } else if (m.homeGoals < m.awayGoals) {
+                    table[m.away].v++; table[m.away].p += 3; table[m.home].d++;
+                } else {
+                    table[m.home].e++; table[m.away].e++; table[m.home].p++; table[m.away].p++;
+                }
+            }
+        });
 
                     Object.values(table).forEach(t => t.sg = t.gp - t.gc);
                     let sorted = Object.values(table).sort((a,b) => b.p - a.p || b.sg - a.sg || b.gp - a.gp);
@@ -3123,35 +3186,60 @@ function swapAdminMatchSides() {
             const aObj = getParticipantObj(champ, match.away);
             
             const hVal = match.homeGoals !== null ? match.homeGoals : '';
-            const aVal = match.awayGoals !== null ? match.awayGoals : '';
-            const roundBadge = match.roundNum ? `<span class="absolute -top-3 left-6 bg-brand-500 text-black text-xs font-black uppercase tracking-wider px-3 py-1 rounded-md shadow-lg border border-brand-500/20">Rodada ${match.roundNum}</span>` : '';
-            
-            const inputClasses = `w-16 h-14 bg-black/40 text-center text-3xl font-display font-black focus:outline-none rounded-xl transition-colors border border-transparent text-brand-500 focus:bg-white/10 focus:border-brand-500/50`;
+                    const aVal = match.awayGoals !== null ? match.awayGoals : '';
+                    const rqVal = match.rageQuit || '';
+                    const roundBadge = match.roundNum ? `<span class="absolute -top-3 left-6 bg-brand-500 text-black text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-md shadow-lg border border-brand-500/20">Rodada ${match.roundNum}</span>` : '';
 
-            editor.innerHTML = `
-                <div class="glass p-8 rounded-3xl flex flex-col relative mt-6 border border-brand-500/30 shadow-[0_0_30px_rgba(200,255,0,0.1)]">
-                    ${roundBadge}
-                    <div class="flex items-center justify-between gap-6 mt-4">
-                        <div class="flex-1 flex flex-col items-end">
-                            <span class="font-display text-2xl tracking-wide truncate max-w-full ${match.homeGoals > match.awayGoals && match.played ? 'text-brand-500 font-bold' : 'text-white'}">${escapeHTML(hObj.playerName)}</span>
-                            ${hObj.teamName ? `<span class="text-[10px] text-slate-400 font-bold uppercase truncate max-w-full">${escapeHTML(hObj.teamName)}</span>` : ''}
+                    const inputClasses = `w-16 h-14 bg-black/40 text-center text-3xl font-display font-black focus:outline-none rounded-xl transition-colors border border-transparent text-brand-500 focus:bg-white/10 focus:border-brand-500/50`;
+
+                    editor.innerHTML = `
+                        <div class="glass p-8 rounded-3xl flex flex-col relative mt-6 border border-brand-500/30 shadow-[0_0_30px_rgba(200,255,0,0.1)]">
+                            ${roundBadge}
+                            <div class="flex items-center justify-between gap-6 mt-4">
+                                <div class="flex-1 flex flex-col items-end">
+                                    <span class="font-display text-2xl tracking-wide truncate max-w-full ${match.homeGoals > match.awayGoals && match.played ? 'text-brand-500 font-bold' : 'text-white'}">${escapeHTML(hObj.playerName)}</span>
+                                    ${hObj.teamName ? `<span class="text-[10px] text-slate-400 font-bold uppercase truncate max-w-full">${escapeHTML(hObj.teamName)}</span>` : ''}
+                                </div>
+
+                                <div class="flex gap-4 items-center bg-black/50 p-4 rounded-2xl border border-white/5 shadow-inner shrink-0">
+                                    <input type="number" min="0" id="admin-h-${match.id}" value="${hVal}" placeholder="-" class="${inputClasses}">
+                                    <span class="text-slate-600 text-lg font-black">X</span>
+                                    <input type="number" min="0" id="admin-a-${match.id}" value="${aVal}" placeholder="-" class="${inputClasses}">
+                                </div>
+
+                                <div class="flex-1 flex flex-col items-start">
+                                    <span class="font-display text-2xl tracking-wide truncate max-w-full ${match.awayGoals > match.homeGoals && match.played ? 'text-brand-500 font-bold' : 'text-white'}">${escapeHTML(aObj.playerName)}</span>
+                                    ${aObj.teamName ? `<span class="text-[10px] text-slate-400 font-bold uppercase truncate max-w-full">${escapeHTML(aObj.teamName)}</span>` : ''}
+                                </div>
+                            </div>
+
+                            <input type="hidden" id="admin-rq-${match.id}" value="${rqVal}">
+
+                            <div class="mt-6 pt-5 border-t border-white/5 flex flex-col gap-3">
+                                <div class="flex items-center justify-between gap-2 flex-wrap">
+                                    <button type="button" onclick="toggleRageQuitBox('${match.id}')" class="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all flex items-center gap-2 ${rqVal ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-white/5 border-white/10 text-slate-300 hover:border-red-500/50 hover:text-red-400'}">
+                                        <i class="ph-fill ph-warning-octagon text-base"></i>
+                                        <span id="rq-btn-label-${match.id}">${rqVal === 'home' ? `Rage Quit: ${escapeHTML(hObj.playerName)} (-3 pts)` : rqVal === 'away' ? `Rage Quit: ${escapeHTML(aObj.playerName)} (-3 pts)` : 'Rage Quit'}</span>
+                                    </button>
+                                    ${rqVal ? `<button type="button" onclick="selectRageQuit('${match.id}', '', '${escapeHTML(hObj.playerName)}', '${escapeHTML(aObj.playerName)}')" class="text-[11px] text-slate-400 hover:text-white underline">Remover punição</button>` : ''}
+                                </div>
+
+                                <div id="rq-options-${match.id}" class="${rqVal ? '' : 'hidden'} grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <button type="button" id="rq-opt-home-${match.id}" onclick="selectRageQuit('${match.id}', 'home', '${escapeHTML(hObj.playerName)}', '${escapeHTML(aObj.playerName)}')" class="p-3 rounded-xl border text-left transition-all ${rqVal === 'home' ? 'bg-red-500/20 border-red-500 text-white' : 'bg-black/40 border-white/10 text-slate-300 hover:border-red-500/40'}">
+                                        <div class="text-[10px] uppercase font-bold text-red-400">Casa Quitou (-3 pts)</div>
+                                        <div class="text-sm font-bold truncate">${escapeHTML(hObj.playerName)}</div>
+                                    </button>
+                                    <button type="button" id="rq-opt-away-${match.id}" onclick="selectRageQuit('${match.id}', 'away', '${escapeHTML(hObj.playerName)}', '${escapeHTML(aObj.playerName)}')" class="p-3 rounded-xl border text-left transition-all ${rqVal === 'away' ? 'bg-red-500/20 border-red-500 text-white' : 'bg-black/40 border-white/10 text-slate-300 hover:border-red-500/40'}">
+                                        <div class="text-[10px] uppercase font-bold text-red-400">Fora Quitou (-3 pts)</div>
+                                        <div class="text-sm font-bold truncate">${escapeHTML(aObj.playerName)}</div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button onclick="saveScore('${champId}', '${match.id}')" class="w-full mt-6 bg-brand-500 hover:bg-brand-600 text-black text-sm border border-transparent font-bold py-4 rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-brand-500/20">Atualizar Placar</button>
                         </div>
-                        
-                        <div class="flex gap-4 items-center bg-black/50 p-4 rounded-2xl border border-white/5 shadow-inner shrink-0">
-                            <input type="number" min="0" id="admin-h-${match.id}" value="${hVal}" placeholder="-" class="${inputClasses}">
-                            <span class="text-slate-600 text-lg font-black">X</span>
-                            <input type="number" min="0" id="admin-a-${match.id}" value="${aVal}" placeholder="-" class="${inputClasses}">
-                        </div>
-                        
-                        <div class="flex-1 flex flex-col items-start">
-                            <span class="font-display text-2xl tracking-wide truncate max-w-full ${match.awayGoals > match.homeGoals && match.played ? 'text-brand-500 font-bold' : 'text-white'}">${escapeHTML(aObj.playerName)}</span>
-                            ${aObj.teamName ? `<span class="text-[10px] text-slate-400 font-bold uppercase truncate max-w-full">${escapeHTML(aObj.teamName)}</span>` : ''}
-                        </div>
-                    </div>
-                    <button onclick="saveScore('${champId}', '${match.id}')" class="w-full mt-8 bg-brand-500 hover:bg-brand-600 text-black text-sm border border-transparent font-bold py-4 rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-brand-500/20">Salvar Placar Oficial</button>
-                </div>
-            `;
-        }
+                    `;
+                }
 
         // Init
         loadData();
