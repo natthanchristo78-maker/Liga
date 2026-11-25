@@ -539,13 +539,16 @@
             </div>
 
             <!-- Estatísticas -->
-            <div id="stats-container" class="mt-8 w-full">
-                <!-- Estatísticas renderizadas aqui -->
-            </div>
+        <div id="stats-container" class="mt-8 w-full">
+            <!-- Estatísticas renderizadas aqui -->
         </div>
 
-        <!-- Tab: Admin -->
-        <div id="view-admin" class="space-y-10 hidden animate-[fadeIn_0.5s_ease-out]">
+        <!-- Ordem de Escolha (Draft) -->
+        <div id="champ-draft-container" class="mt-8 w-full hidden"></div>
+    </div>
+
+    <!-- Tab: Admin -->
+    <div id="view-admin" class="space-y-10 hidden">
             <div class="glass p-8 rounded-3xl relative overflow-hidden">
                 <h3 class="font-display text-2xl font-bold uppercase tracking-wide mb-6 flex items-center gap-3">
                     <i class="ph-bold ph-shield-check text-brand-500 text-3xl"></i> Administração de Placares
@@ -576,7 +579,7 @@
                     <!-- Matches editable form rendered here -->
                 </div>
             </div>
-            <!-- Quadro de Sorteio da Ordem de Escolha -->
+           <!-- Quadro de Sorteio da Ordem de Escolha -->
         <div class="glass p-8 rounded-3xl relative overflow-hidden">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <h3 class="font-display text-2xl font-bold uppercase tracking-wide flex items-center gap-3">
@@ -592,6 +595,21 @@
                 </div>
             </div>
 
+            <!-- Vínculo com o Campeonato e Trava Anti-Repetição -->
+            <div class="mb-6 p-5 bg-black/40 rounded-2xl border border-white/5 space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Vincular Sorteio ao Campeonato</label>
+                    <select id="draft-champ-select" onchange="onDraftChampChange()" class="fc-input w-full md:w-2/3 rounded-xl px-4 py-3 text-sm font-medium appearance-none cursor-pointer">
+                        <option value="">-- Selecione o Campeonato --</option>
+                    </select>
+                </div>
+
+                <div id="draft-lock-banner" class="hidden p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-2.5">
+                    <i class="ph-fill ph-shield-warning text-amber-400 text-base shrink-0 mt-0.5"></i>
+                    <div id="draft-lock-text"></div>
+                </div>
+            </div>
+
             <div class="mb-6 p-6 bg-black/40 rounded-2xl border border-white/5 shadow-inner">
                 <div class="flex items-center justify-between mb-4">
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Jogadores Participantes</span>
@@ -602,25 +620,29 @@
                 </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-4">
-                <button type="button" id="btn-start-draft" onclick="startOrderDraft()" class="px-6 py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm uppercase tracking-wider flex items-center gap-2 transition shadow-lg cursor-pointer">
+            <div class="flex flex-wrap items-center gap-3">
+                <button type="button" id="btn-start-draft" onclick="startOrderDraft()" class="px-6 py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-black font-bold text-sm uppercase tracking-wider flex items-center gap-2 transition shadow-lg cursor-pointer">
                     <i class="ph-bold ph-dice-five text-lg"></i> Realizar Sorteio
                 </button>
-                <button type="button" id="btn-copy-draft" onclick="copyDraftResult()" class="hidden px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm uppercase tracking-wider flex items-center gap-2 transition shadow-lg cursor-pointer">
+                <button type="button" id="btn-save-draft" onclick="saveDraftToChampionship()" class="hidden px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-bold text-sm uppercase tracking-wider flex items-center gap-2 transition cursor-pointer">
+                    <i class="ph-bold ph-floppy-disk text-lg text-brand-500"></i> Salvar no Campeonato
+                </button>
+                <button type="button" id="btn-copy-draft" onclick="copyDraftResult()" class="hidden px-5 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm uppercase tracking-wider flex items-center gap-2 transition shadow-lg cursor-pointer">
                     <i class="ph-bold ph-whatsapp-logo text-lg"></i> Copiar para WhatsApp
                 </button>
             </div>
 
             <div id="draft-result-container" class="hidden mt-6 p-6 bg-black/40 rounded-2xl border border-white/5 shadow-inner">
-                <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center justify-between gap-2 mb-4 flex-wrap">
                     <span id="draft-result-title" class="text-[10px] font-bold text-brand-500 uppercase tracking-widest">Ordem Definida</span>
+                    <span id="draft-result-badge" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider"></span>
                 </div>
                 <div id="draft-result-list" class="space-y-2">
                     <!-- Resultado do sorteio -->
                 </div>
             </div>
         </div>
-        </div>
+    </div>
 
     </main>
 
@@ -989,11 +1011,138 @@ async function authenticateAdmin() {
         if (openChampScoresBtn) openChampScoresBtn.classList.toggle('hidden', !isAdmin);
             
             renderAll();
-        }
+        } 
+        
 /* --- SORTEIO DA ORDEM DE ESCOLHA --- */
 let draftExcludedIds = new Set();
 let lastDraftResult = [];
 let isDrawingDraft = false;
+
+function safeDraftText(val) {
+    const str = String(val ?? '');
+    return typeof escapeHTML === 'function' ? escapeHTML(str) : str;
+}
+
+function getPreviousChampionshipDraft(targetChampId) {
+    const champs = Array.isArray(state.championships) ? state.championships : [];
+    const withDraft = champs.filter(c => Array.isArray(c.draftOrder) && c.draftOrder.length >= 2);
+    if (withDraft.length === 0) return null;
+
+    let prevChamp = null;
+    if (targetChampId) {
+        const targetIdx = champs.findIndex(c => c.id === targetChampId);
+        if (targetIdx > 0) {
+            for (let i = targetIdx - 1; i >= 0; i--) {
+                if (Array.isArray(champs[i].draftOrder) && champs[i].draftOrder.length >= 2) {
+                    prevChamp = champs[i];
+                    break;
+                }
+            }
+        } else if (targetIdx === -1) {
+            prevChamp = withDraft[withDraft.length - 1];
+        }
+    } else {
+        prevChamp = withDraft[withDraft.length - 1];
+    }
+
+    if (!prevChamp) return null;
+
+    const firstEntry = prevChamp.draftOrder[0];
+    const lastEntry = prevChamp.draftOrder[prevChamp.draftOrder.length - 1];
+
+    return {
+        prevChamp,
+        blockedFirstId: firstEntry.playerId || null,
+        blockedFirstName: firstEntry.playerName || '',
+        blockedLastId: lastEntry.playerId || null,
+        blockedLastName: lastEntry.playerName || ''
+    };
+}
+
+function isSameDraftPlayer(player, blockedId, blockedName) {
+    if (!player) return false;
+    if (blockedId && player.id === blockedId) return true;
+    if (blockedName && player.name && player.name.trim().toLowerCase() === blockedName.trim().toLowerCase()) return true;
+    return false;
+}
+
+function updateDraftLockBanner() {
+    const selectEl = document.getElementById('draft-champ-select');
+    const banner = document.getElementById('draft-lock-banner');
+    const textEl = document.getElementById('draft-lock-text');
+    if (!banner || !textEl) return;
+
+    const targetChampId = selectEl ? selectEl.value : '';
+    const lockInfo = getPreviousChampionshipDraft(targetChampId);
+
+    if (!lockInfo) {
+        banner.classList.add('hidden');
+        return;
+    }
+
+    banner.classList.remove('hidden');
+    textEl.innerHTML = `
+        <span class="font-bold text-amber-300 uppercase tracking-wider block mb-0.5">Trava Anti-Repetição Ativa (${safeDraftText(lockInfo.prevChamp.name)})</span>
+        <span><strong>${safeDraftText(lockInfo.blockedFirstName)}</strong> não pode repetir a <strong>1ª posição</strong> e <strong>${safeDraftText(lockInfo.blockedLastName)}</strong> não pode repetir a <strong>última posição</strong> neste sorteio.</span>
+    `;
+}
+
+function syncDraftChampOptions() {
+    const selectEl = document.getElementById('draft-champ-select');
+    if (!selectEl) return;
+
+    const champs = Array.isArray(state.championships) ? state.championships : [];
+    const currentVal = selectEl.value;
+    const adminSelect = document.getElementById('admin-champ-select');
+
+    selectEl.innerHTML = `<option value="">-- Selecione o Campeonato --</option>` +
+        champs.map(c => {
+            const hasDraft = Array.isArray(c.draftOrder) && c.draftOrder.length > 0;
+            return `<option value="${c.id}">${safeDraftText(c.name)}${hasDraft ? ' (Sorteio Salvo)' : ''}</option>`;
+        }).join('');
+
+    if (currentVal && champs.some(c => c.id === currentVal)) {
+        selectEl.value = currentVal;
+    } else if (adminSelect && adminSelect.value && champs.some(c => c.id === adminSelect.value)) {
+        selectEl.value = adminSelect.value;
+    } else if (champs.length > 0) {
+        selectEl.value = champs[champs.length - 1].id;
+    }
+
+    updateDraftLockBanner();
+}
+
+function onDraftChampChange() {
+    updateDraftLockBanner();
+
+    const selectEl = document.getElementById('draft-champ-select');
+    const resultContainer = document.getElementById('draft-result-container');
+    const resultTitle = document.getElementById('draft-result-title');
+    const resultBadge = document.getElementById('draft-result-badge');
+    const btnCopy = document.getElementById('btn-copy-draft');
+    const btnSave = document.getElementById('btn-save-draft');
+
+    if (!selectEl) return;
+    const champ = (state.championships || []).find(c => c.id === selectEl.value);
+
+    if (champ && Array.isArray(champ.draftOrder) && champ.draftOrder.length > 0) {
+        lastDraftResult = champ.draftOrder.map(item => ({
+            id: item.playerId,
+            name: item.playerName
+        }));
+        if (resultContainer) resultContainer.classList.remove('hidden');
+        if (resultTitle) resultTitle.textContent = `ORDEM OFICIAL SALVA — ${champ.name.toUpperCase()}`;
+        if (resultBadge) resultBadge.textContent = 'Registrado no Campeonato';
+        if (btnCopy) btnCopy.classList.remove('hidden');
+        if (btnSave) btnSave.classList.add('hidden');
+        renderDraftResultList(lastDraftResult, false);
+    } else {
+        lastDraftResult = [];
+        if (resultContainer) resultContainer.classList.add('hidden');
+        if (btnCopy) btnCopy.classList.add('hidden');
+        if (btnSave) btnSave.classList.add('hidden');
+    }
+}
 
 function renderDraftPlayers() {
     const container = document.getElementById('draft-players-list');
@@ -1013,8 +1162,8 @@ function renderDraftPlayers() {
         if (isChecked) selectedCount++;
         return `
             <label class="flex items-center gap-3 p-3 rounded-xl border ${isChecked ? 'border-brand-500/40 bg-brand-500/10' : 'border-white/5 bg-white/[0.02] opacity-60'} cursor-pointer transition select-none">
-                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleDraftPlayer('${p.id}', this.checked)" class="w-4 h-4 accent-red-600 rounded cursor-pointer">
-                <span class="text-sm font-semibold text-white truncate">${p.name}</span>
+                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleDraftPlayer('${p.id}', this.checked)" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
+                <span class="text-sm font-semibold text-white truncate">${safeDraftText(p.name)}</span>
             </label>
         `;
     }).join('');
@@ -1052,6 +1201,43 @@ function shuffleArray(list) {
     return arr;
 }
 
+function generateConstrainedDraft(selectedPlayers, lockInfo) {
+    if (!lockInfo || selectedPlayers.length < 2) {
+        return shuffleArray(selectedPlayers);
+    }
+
+    const isValidOrder = (arr) => {
+        const firstBlocked = isSameDraftPlayer(arr[0], lockInfo.blockedFirstId, lockInfo.blockedFirstName);
+        const lastBlocked = isSameDraftPlayer(arr[arr.length - 1], lockInfo.blockedLastId, lockInfo.blockedLastName);
+        return !firstBlocked && !lastBlocked;
+    };
+
+    // Tenta até 400 embaralhamentos aleatórios respeitando a trava
+    for (let attempt = 0; attempt < 400; attempt++) {
+        const candidate = shuffleArray(selectedPlayers);
+        if (isValidOrder(candidate)) {
+            return candidate;
+        }
+    }
+
+    // Fallback determinístico caso a amostra seja muito pequena (ex: 2 jogadores)
+    const fallback = shuffleArray(selectedPlayers);
+    if (isSameDraftPlayer(fallback[0], lockInfo.blockedFirstId, lockInfo.blockedFirstName)) {
+        const swapIdx = fallback.findIndex((p, idx) => idx > 0 && !isSameDraftPlayer(p, lockInfo.blockedFirstId, lockInfo.blockedFirstName));
+        if (swapIdx > 0) {
+            [fallback[0], fallback[swapIdx]] = [fallback[swapIdx], fallback[0]];
+        }
+    }
+    const lastIdx = fallback.length - 1;
+    if (isSameDraftPlayer(fallback[lastIdx], lockInfo.blockedLastId, lockInfo.blockedLastName)) {
+        const swapIdx = fallback.findIndex((p, idx) => idx < lastIdx && !isSameDraftPlayer(p, lockInfo.blockedLastId, lockInfo.blockedLastName) && !(idx === 0 && isSameDraftPlayer(fallback[lastIdx], lockInfo.blockedFirstId, lockInfo.blockedFirstName)));
+        if (swapIdx >= 0) {
+            [fallback[lastIdx], fallback[swapIdx]] = [fallback[swapIdx], fallback[lastIdx]];
+        }
+    }
+    return fallback;
+}
+
 function renderDraftResultList(list, isAnimating) {
     const resultList = document.getElementById('draft-result-list');
     if (!resultList) return;
@@ -1059,16 +1245,54 @@ function renderDraftResultList(list, isAnimating) {
     resultList.innerHTML = list.map((p, idx) => {
         const pos = idx + 1;
         const isFirst = pos === 1 && !isAnimating;
+        const isLast = pos === list.length && list.length > 2 && !isAnimating;
         return `
             <div class="flex items-center justify-between px-4 py-3 rounded-xl border ${isFirst ? 'border-brand-500 bg-brand-500/15' : 'border-white/5 bg-white/[0.03]'} transition">
                 <div class="flex items-center gap-3">
-                    <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black ${isFirst ? 'bg-brand-500 text-white' : 'bg-white/10 text-slate-300'}">${pos}º</span>
-                    <span class="font-bold text-sm text-white">${p.name}</span>
+                    <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black ${isFirst ? 'bg-brand-500 text-black' : 'bg-white/10 text-slate-300'}">${pos}º</span>
+                    <span class="font-bold text-sm text-white">${safeDraftText(p.name)}</span>
                 </div>
-                ${isFirst ? '<span class="text-[10px] font-bold uppercase tracking-widest text-brand-500">1ª Escolha</span>' : ''}
+                ${isFirst ? '<span class="text-[10px] font-bold uppercase tracking-widest text-brand-500">1ª Escolha</span>' : isLast ? '<span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Última Escolha</span>' : ''}
             </div>
         `;
     }).join('');
+}
+
+function saveDraftToChampionship(silent = false) {
+    if (!isAdmin) return showToast("Acesso restrito (Somente Admin)", "error");
+    if (!lastDraftResult.length) return;
+
+    const selectEl = document.getElementById('draft-champ-select');
+    const champId = selectEl ? selectEl.value : '';
+    if (!champId) {
+        if (!silent) showToast("Selecione um campeonato acima para vincular o sorteio.", "error");
+        return false;
+    }
+
+    const champ = (state.championships || []).find(c => c.id === champId);
+    if (!champ) return false;
+
+    const lockInfo = getPreviousChampionshipDraft(champId);
+    champ.draftOrder = lastDraftResult.map((p, idx) => ({
+        pos: idx + 1,
+        playerId: p.id,
+        playerName: p.name
+    }));
+    champ.draftBasedOn = lockInfo ? lockInfo.prevChamp.name : null;
+    champ.draftUpdatedAt = new Date().toISOString();
+
+    saveData();
+    syncDraftChampOptions();
+
+    const resultTitle = document.getElementById('draft-result-title');
+    const resultBadge = document.getElementById('draft-result-badge');
+    const btnSave = document.getElementById('btn-save-draft');
+    if (resultTitle) resultTitle.textContent = `ORDEM OFICIAL SALVA — ${champ.name.toUpperCase()}`;
+    if (resultBadge) resultBadge.textContent = 'Registrado no Campeonato';
+    if (btnSave) btnSave.classList.add('hidden');
+
+    if (!silent) showToast(`Ordem salva em "${champ.name}"!`, "success");
+    return true;
 }
 
 function startOrderDraft() {
@@ -1081,16 +1305,24 @@ function startOrderDraft() {
         return;
     }
 
+    const selectEl = document.getElementById('draft-champ-select');
+    const targetChampId = selectEl ? selectEl.value : '';
+    const lockInfo = getPreviousChampionshipDraft(targetChampId);
+
     isDrawingDraft = true;
     const btnStart = document.getElementById('btn-start-draft');
     const btnCopy = document.getElementById('btn-copy-draft');
+    const btnSave = document.getElementById('btn-save-draft');
     const resultContainer = document.getElementById('draft-result-container');
     const resultTitle = document.getElementById('draft-result-title');
+    const resultBadge = document.getElementById('draft-result-badge');
 
     if (btnStart) btnStart.disabled = true;
     if (btnCopy) btnCopy.classList.add('hidden');
+    if (btnSave) btnSave.classList.add('hidden');
     if (resultContainer) resultContainer.classList.remove('hidden');
     if (resultTitle) resultTitle.textContent = 'SORTEANDO ORDEM...';
+    if (resultBadge) resultBadge.textContent = '';
 
     let ticks = 0;
     const maxTicks = 28;
@@ -1100,21 +1332,31 @@ function startOrderDraft() {
 
         if (ticks >= maxTicks) {
             clearInterval(interval);
-            lastDraftResult = shuffleArray(selected);
+            lastDraftResult = generateConstrainedDraft(selected, lockInfo);
             renderDraftResultList(lastDraftResult, false);
-            if (resultTitle) resultTitle.textContent = 'ORDEM DE ESCOLHA DEFINIDA';
             if (btnCopy) btnCopy.classList.remove('hidden');
             if (btnStart) btnStart.disabled = false;
             isDrawingDraft = false;
-            showToast("Sorteio realizado com sucesso!", "success");
+
+            const saved = saveDraftToChampionship(true);
+            if (!saved) {
+                if (resultTitle) resultTitle.textContent = 'ORDEM DE ESCOLHA DEFINIDA';
+                if (btnSave) btnSave.classList.remove('hidden');
+                showToast("Sorteio realizado! Selecione um campeonato para salvar.", "success");
+            } else {
+                showToast("Sorteio realizado e salvo no campeonato!", "success");
+            }
         }
     }, 85);
 }
 
 function copyDraftResult() {
     if (!lastDraftResult.length) return;
+    const selectEl = document.getElementById('draft-champ-select');
+    const champ = (state.championships || []).find(c => c.id === (selectEl ? selectEl.value : ''));
+    const header = champ ? `🏆 *ORDEM DE ESCOLHA — ${champ.name.toUpperCase()}* 🏆` : `🏆 *ORDEM DE ESCOLHA DOS TIMES - LMF* 🏆`;
     const lines = lastDraftResult.map((p, i) => `${i + 1}º - ${p.name}`);
-    const text = `🏆 *ORDEM DE ESCOLHA DOS TIMES - LMF* 🏆\n\n${lines.join('\n')}`;
+    const text = `${header}\n\n${lines.join('\n')}`;
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
@@ -1131,38 +1373,86 @@ function copyDraftResult() {
     }
 }
 
-if (typeof renderAll === 'function') {
-    const _origRenderAll = renderAll;
-    renderAll = function() {
-        _origRenderAll.apply(this, arguments);
-        renderDraftPlayers();
-    };
+function renderChampDraftOrder() {
+    const container = document.getElementById('champ-draft-container');
+    if (!container) return;
+
+    const champ = (state.championships || []).find(c => c.id === currentChampId);
+    if (!champ || !Array.isArray(champ.draftOrder) || champ.draftOrder.length === 0) {
+        container.classList.add('hidden');
+        container.innerHTML = '';
+        return;
+    }
+
+    container.classList.remove('hidden');
+    container.innerHTML = `
+        <div class="glass rounded-3xl border border-white/5 p-6 md:p-8">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-4 mb-5">
+                <div class="flex items-center gap-3">
+                    <i class="ph-fill ph-list-numbers text-brand-500 text-2xl"></i>
+                    <div>
+                        <h3 class="font-display text-xl font-bold uppercase tracking-wider text-white">Ordem Oficial de Escolha</h3>
+                        ${champ.draftBasedOn ? `<p class="text-[11px] text-slate-400">Trava anti-repetição aplicada com base em: <span class="text-slate-300 font-semibold">${safeDraftText(champ.draftBasedOn)}</span></p>` : ''}
+                    </div>
+                </div>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-brand-500 bg-brand-500/10 border border-brand-500/20 px-3 py-1 rounded-full self-start sm:self-auto">
+                    ${champ.draftOrder.length} Participantes
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                ${champ.draftOrder.map((item, idx) => {
+                    const pos = item.pos || (idx + 1);
+                    const isFirst = pos === 1;
+                    return `
+                        <div class="flex items-center justify-between px-4 py-3 rounded-xl border ${isFirst ? 'border-brand-500/60 bg-brand-500/10' : 'border-white/5 bg-black/30'}">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${isFirst ? 'bg-brand-500 text-black' : 'bg-white/10 text-slate-300'}">${pos}º</span>
+                                <span class="font-bold text-sm text-white truncate">${safeDraftText(item.playerName)}</span>
+                            </div>
+                            ${isFirst ? '<span class="text-[9px] font-black uppercase tracking-widest text-brand-500 shrink-0 ml-2">1ª Escolha</span>' : ''}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
 }
-        /* --- UI HELPERS --- */
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            const isSuccess = type === 'success';
-            
-            const bgClass = isSuccess ? 'bg-[#1a1a1f]' : 'bg-[#1a1313]';
-            const borderClass = isSuccess ? 'border-brand-500/30' : 'border-red-500/30';
-            const iconColor = isSuccess ? 'text-brand-500' : 'text-red-500';
-            const icon = isSuccess ? 'ph-check-circle' : 'ph-x-circle';
-            
-            toast.className = `toast-enter flex items-center gap-4 ${bgClass} border ${borderClass} p-4 pr-6 rounded-2xl shadow-2xl pointer-events-auto backdrop-blur-md`;
-            toast.innerHTML = `
-                <div class="${iconColor} text-2xl"><i class="ph-fill ${icon}"></i></div>
-                <span class="font-medium text-sm text-white">${message}</span>
-            `;
-            
-            container.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.classList.remove('toast-enter');
-                toast.classList.add('toast-leave');
-                setTimeout(() => toast.remove(), 300);
-            }, 3500);
-        }
+
+function renderDraftPanel() {
+    try {
+        syncDraftChampOptions();
+        renderDraftPlayers();
+        onDraftChampChange();
+    } catch (err) {
+        console.error('Erro ao renderizar painel de sorteio:', err);
+    }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    if (typeof renderAll === 'function') {
+        const _origRenderAll = renderAll;
+        renderAll = function() {
+            _origRenderAll.apply(this, arguments);
+            renderDraftPanel();
+            try { renderChampDraftOrder(); } catch (e) { console.error(e); }
+        };
+    }
+    if (typeof switchTab === 'function') {
+        const _origSwitchTab = switchTab;
+        switchTab = function(tab) {
+            _origSwitchTab.apply(this, arguments);
+            if (tab === 'admin') {
+                const adminEl = document.getElementById('view-admin');
+                if (adminEl && isAdmin) adminEl.classList.remove('hidden');
+                renderDraftPanel();
+            }
+            if (tab === 'champ-details') {
+                try { renderChampDraftOrder(); } catch (e) { console.error(e); }
+            }
+        };
+    }
+});
 
         function switchTab(tab) {
     ['home', 'players', 'teams', 'champ-details', 'admin', 'rules'].forEach(t => {
