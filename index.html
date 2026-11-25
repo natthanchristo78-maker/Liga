@@ -2675,6 +2675,28 @@ function switchChampSubTab(tab) {
                 return getParticipantObj(champ, homeId);
             }
             
+             // Lógica de Campeão para Pontos Corridos
+            let table = {};
+            champ.teamIds.forEach(id => {
+                table[id] = { id, p: 0, sg: 0, gp: 0, gc: 0 };
+            });
+            champ.matches.forEach(m => {
+                if (m.played && m.home !== 'BYE' && m.away !== 'BYE') {
+                    if (!table[m.home] || !table[m.away]) return;
+                    table[m.home].gp += m.homeGoals; table[m.home].gc += m.awayGoals;
+                    table[m.away].gp += m.awayGoals; table[m.away].gc += m.homeGoals;
+                    if (m.rageQuit === 'home') { table[m.away].p += 3; table[m.home].p -= 3; }
+                    else if (m.rageQuit === 'away') { table[m.home].p += 3; table[m.away].p -= 3; }
+                    else if (m.homeGoals > m.awayGoals) { table[m.home].p += 3; }
+                    else if (m.homeGoals < m.awayGoals) { table[m.away].p += 3; }
+                    else { table[m.home].p++; table[m.away].p++; }
+                }
+            });
+            Object.values(table).forEach(t => t.sg = t.gp - t.gc);
+            let sorted = Object.values(table).sort((a, b) => b.p - a.p || b.sg - a.sg || b.gp - a.gp);
+            return sorted[0] ? getParticipantObj(champ, sorted[0].id) : null;
+        }
+        
             function resolveChampParticipantAssets(champ, participantId) {
             const p = getParticipantObj(champ, participantId) || {};
             const playerName = p.playerName || 'Jogador';
