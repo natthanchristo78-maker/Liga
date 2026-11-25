@@ -521,11 +521,13 @@
                                         <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
                                         <span>Classificação Copa Top 8 (1º ao 8º)</span>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
-                                        <span>Zona de Rebaixamento (2 últimos)</span>
-                                    </div>
-                                </div>
+                                     <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                            <span>Zona de Rebaixamento (2 últimos)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Chaveamento (Mata-Mata) -->
             <div id="bracket-container" class="glass rounded-3xl overflow-hidden hidden border border-white/5 p-6 overflow-x-auto">
@@ -910,7 +912,39 @@ function isTokenValid(token) {
         return false;
     }
 }
+        
+function showToast(message, type = 'info') {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'fixed bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none';
+                document.body.appendChild(container);
+            }
 
+            const toast = document.createElement('div');
+            const styleMap = {
+                error: 'bg-red-950/95 border-red-500/60 text-red-200',
+                success: 'bg-emerald-950/95 border-emerald-500/60 text-emerald-200',
+                info: 'bg-slate-900/95 border-brand-500/60 text-white'
+            };
+            const iconMap = {
+                error: 'ph-fill ph-warning-circle text-red-400',
+                success: 'ph-fill ph-check-circle text-emerald-400',
+                info: 'ph-fill ph-info text-brand-500'
+            };
+
+            toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl border backdrop-blur-md shadow-2xl text-xs font-bold tracking-wide transition-all duration-300 ${styleMap[type] || styleMap.info}`;
+            toast.innerHTML = `<i class="${iconMap[type] || iconMap.info} text-lg shrink-0"></i><span>${message}</span>`;
+
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(8px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+        
 function openAuthModal() {
     if (isAdmin) {
         isAdmin = false;
